@@ -1,0 +1,22 @@
+{
+  "name": "bigon-netscaler",
+  "version": "0.1.0",
+  "author": "bigon",
+  "summary": "Manage NetScaler (Citrix ADC) through the NITRO REST API, successor of puppetlabs-netscaler",
+  "license": "Apache-2.0",
+  "source": "https://github.com/bigon/puppet-netscaler",
+  "project_page": "https://github.com/bigon/puppet-netscaler",
+  "issues_url": "https://github.com/bigon/puppet-netscaler/issues",
+  "dependencies": [],
+  "operatingsystem_support": [],
+  "requirements": [
+    {
+      "name": "puppet",
+      "version_requirement": ">= 8.0.0 < 10.0.0"
+    },
+    {
+      "name": "openvox",
+      "version_requirement": ">= 8.0.0 < 10.0.0"
+    }
+  ]
+}

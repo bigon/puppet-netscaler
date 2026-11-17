@@ -1,0 +1,107 @@
+# NITRO resources for which tools/generate.rb emits a nitro_<resource> type.
+#
+# Everything not listed here is derived from the NITRO OpenAPI spec.
+# Supported keys:
+#   namevars:       (bindings) NITRO keys identifying one binding. The first
+#                   one must be the URL path key (the bound-to entity).
+#   title_pattern:  (bindings) regex with named captures (one per namevar)
+#                   used to split the resource title. Defaults to the
+#                   namevars joined with '/'.
+#   title_format:   (bindings) format string building the title back from
+#                   the namevars; must be the inverse of title_pattern.
+#   delete_args:    extra NITRO keys passed as ?args= on DELETE when they
+#                   are set on the current binding (namevars are always
+#                   passed).
+#   write_only:     attributes NITRO returns encrypted (or not at all);
+#                   they become parameters: sent, but never compared.
+#                   Attributes missing from the GET payload of the NITRO
+#                   REST reference are detected automatically.
+#   action_updates: { <action>: [attrs] } attributes that are changed with
+#                   POST ?action=<action> instead of PUT.
+#   update_with:    { <attr>: [attrs] } when <attr> changes, the listed
+#                   attributes are sent in the same PUT (desired value, else
+#                   the current one): NITRO refuses <attr> alone.
+#   rebind_exclude: (bindings) attributes NITRO returns but refuses on a bind
+#                   next to the namevars; changing a binding binds it again
+#                   with its current attributes except these.
+#   init_only:      extra attributes that cannot be changed after creation.
+#   sensitive:      secrets: the type also accepts Sensitive values, and the
+#                   value read back is wrapped in Sensitive, so it is
+#                   redacted in logs and reports.
+#   autorequire:    { <NITRO attribute>: [<NITRO resources>] } entities this
+#                   one depends on; both their nitro_* and netscaler_* types
+#                   are autorequired.
+#   kind:           'settings' for entities that cannot be added/deleted
+#                   (e.g. sslvserver): only PUT updates are done.
+---
+server: {}
+service:
+  autorequire: {servername: [server]}
+servicegroup: {}
+servicegroup_servicegroupmember_binding:
+  namevars: [servicegroupname, servername, port]
+  title_pattern: '\A(?<servicegroupname>[^/]+)/(?<servername>.+):(?<port>\d+)\z'
+  title_format: '%{servicegroupname}/%{servername}:%{port}'
+  # NITRO reports both servername and ip, but refuses them together on a
+  # bind ("Arguments cannot both be specified [serverName, IP]"). Checked on
+  # a NetScaler CPX: it accepts every other attribute it reports.
+  rebind_exclude: [ip]
+  autorequire: {servicegroupname: [servicegroup], servername: [server]}
+lbvserver:
+  autorequire: {backupvserver: [lbvserver]}
+lbvserver_service_binding:
+  namevars: [name, servicename]
+  autorequire: {name: [lbvserver], servicename: [service]}
+lbvserver_servicegroup_binding:
+  namevars: [name, servicegroupname]
+  autorequire: {name: [lbvserver], servicegroupname: [servicegroup]}
+lbmonitor:
+  write_only: [password, secondarypassword, radkey]
+  sensitive: [password, secondarypassword, radkey, snmpcommunity, secureargs]
+  init_only: [type]
+service_lbmonitor_binding:
+  namevars: [name, monitor_name]
+  autorequire: {name: [service], monitor_name: [lbmonitor]}
+servicegroup_lbmonitor_binding:
+  namevars: [servicegroupname, monitor_name]
+  delete_args: [port]
+  # NITRO refuses state together with monitor_name on a bind
+  rebind_exclude: [state]
+  autorequire: {servicegroupname: [servicegroup], monitor_name: [lbmonitor]}
+csvserver: {}
+cspolicy:
+  autorequire: {action: [csaction]}
+csaction:
+  autorequire: {targetlbvserver: [lbvserver]}
+csvserver_lbvserver_binding:
+  namevars: [name, lbvserver]
+  autorequire: {name: [csvserver], lbvserver: [lbvserver]}
+csvserver_cspolicy_binding:
+  namevars: [name, policyname]
+  delete_args: [bindpoint, priority]
+  autorequire:
+    name: [csvserver]
+    policyname: [cspolicy]
+    targetlbvserver: [lbvserver]
+sslcertkey:
+  write_only: [passplain, password, nodomaincheck]
+  sensitive: [passplain]
+  action_updates:
+    update: [cert, key, password, fipskey, inform, passplain, nodomaincheck]
+    link: [linkcertkeyname]
+  # NITRO refuses notificationperiod alone ("Argument pre-requisite missing
+  # [notificationPeriod, expiryMonitor]")
+  update_with: {notificationperiod: [expirymonitor]}
+  autorequire: {linkcertkeyname: [sslcertkey]}
+sslvserver:
+  kind: settings
+  autorequire: {vservername: [lbvserver, csvserver]}
+sslvserver_sslcertkey_binding:
+  namevars: [vservername, certkeyname]
+  delete_args: [ca, snicert, crlcheck, ocspcheck]
+  autorequire:
+    vservername: [lbvserver, csvserver, sslvserver]
+    certkeyname: [sslcertkey]
+sslvserver_sslciphersuite_binding:
+  namevars: [vservername, ciphername]
+  autorequire: {vservername: [lbvserver, csvserver, sslvserver]}

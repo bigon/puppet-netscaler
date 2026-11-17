@@ -1,0 +1,13 @@
+/pkg/
+/Gemfile.lock
+/Gemfile.local
+/vendor/
+/.vendor/
+/spec/fixtures/manifests/
+/spec/fixtures/modules/
+/.bundle/
+/coverage/
+/log/
+/.yardoc/
+/doc/
+.rerun.json

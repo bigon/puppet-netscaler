@@ -1,0 +1,100 @@
+---
+# Hand-written test fixture shaped like a NITRO OpenAPI resource file. It is
+# not a copy of the NITRO reference: only the structure the generator reads.
+components:
+  parameters:
+    action:
+      in: query
+      name: action
+      schema:
+        enum:
+          - disable
+          - enable
+        type: string
+  schemas:
+    add_operation:
+      properties:
+        name: &name
+          description: Fixture key.
+          type: string
+        servicetype: &servicetype
+          description: Fixture create-only, required on create.
+          enum:
+            - HTTP
+            - TCP
+          type: string
+        port: &port
+          description: Fixture create-only port.
+          maximum: 65535
+          minimum: 1
+          type: integer
+        servername: &servername
+          description: Fixture create-only reference.
+          type: string
+        ip: &ip
+          description: Fixture create-only value that GET never returns.
+          type: string
+        state: &state
+          description: Fixture state.
+          enum:
+            - ENABLED
+            - DISABLED
+          type: string
+    update_operation:
+      properties:
+        name: *name
+        monitor_name_svc: &monitor_name_svc
+          description: Fixture update-only value that GET never returns.
+          type: string
+    disable_operation:
+      properties:
+        name: *name
+    service:
+      properties:
+        name: *name
+        servicetype: *servicetype
+        port: *port
+        servername: *servername
+        ip: *ip
+        monitor_name_svc: *monitor_name_svc
+        state: *state
+info:
+  title: Test fixture for service
+  version: v1-99.9-1.1
+openapi: 3.0.0
+paths:
+  /service:
+    post:
+      operationId: create_service
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                service:
+                  allOf:
+                    - $ref: '#/components/schemas/service'
+                    - required:
+                        - servicetype
+                        - port
+                        - name
+  '/service/{name}':
+    delete:
+      operationId: delete_service
+    get:
+      operationId: get_byname
+    put:
+      operationId: update_service
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                service:
+                  allOf:
+                    - $ref: '#/components/schemas/update_operation'
+                    - required:
+                        - name
+tags:
+  - description: Fixture service resource.
+    name: service

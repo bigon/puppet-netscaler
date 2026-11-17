@@ -1,0 +1,63 @@
+---
+# Hand-written test fixture shaped like a NITRO OpenAPI resource file. It is
+# not a copy of the NITRO reference: only the structure the generator reads.
+components:
+  schemas:
+    update_operation:
+      properties:
+        name: &name
+          description: Fixture bound-to key.
+          type: string
+        servicename: &servicename
+          description: Fixture bound key.
+          type: string
+        servicegroupname:
+          description: Fixture alternative bound key.
+          type: string
+        weight: &weight
+          description: Fixture bounded integer.
+          maximum: 100
+          minimum: 1
+          type: integer
+    lbvserver_service_binding:
+      properties:
+        name: *name
+        servicename: *servicename
+        weight: *weight
+        curstate:
+          description: Fixture read-only value.
+          readOnly: true
+          type: string
+info:
+  title: Test fixture for lbvserver_service_binding
+  version: v1-99.9-1.1
+openapi: 3.0.0
+paths:
+  '/lbvserver_service_binding/{name}':
+    delete:
+      operationId: delete_lbvserver_service_binding
+      parameters:
+        - in: path
+          name: name
+          required: true
+        # yamllint disable-line rule:line-length
+        - description: '***servicename*** : <value>, ***servicegroupname*** : <value>,'
+          in: query
+          name: args
+    get:
+      operationId: get_byname
+    put:
+      operationId: update_lbvserver_service_binding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                lbvserver_service_binding:
+                  allOf:
+                    - $ref: '#/components/schemas/update_operation'
+                    - required:
+                        - name
+tags:
+  - description: Fixture binding resource.
+    name: lbvserver_service_binding

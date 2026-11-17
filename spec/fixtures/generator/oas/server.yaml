@@ -1,0 +1,155 @@
+---
+# The bare YAML 1.1 booleans below imitate the NITRO spec on purpose.
+# yamllint disable rule:truthy
+# Hand-written test fixture shaped like a NITRO OpenAPI resource file. It is
+# not a copy of the NITRO reference: only the structure the generator reads.
+components:
+  parameters:
+    action: &action
+      in: query
+      name: action
+      schema:
+        enum:
+          - disable
+          - enable
+          - rename
+          - unset
+        type: string
+    server_post_action: *action
+  schemas:
+    add_operation:
+      properties:
+        name: &name
+          description: Fixture key.
+          minLength: 1
+          type: string
+        ipaddress: &ipaddress
+          description: Fixture address.
+          type: string
+        domain: &domain
+          description: Fixture domain.
+          type: string
+        ipv6address: &ipv6address
+          default: NO
+          description: Fixture yes/no flag.
+          enum:
+            - YES
+            - NO
+          type: string
+        querytype: &querytype
+          default: A
+          description: Fixture enum.
+          enum:
+            - A
+            - AAAA
+            - SRV
+          type: string
+        td: &td
+          description: Fixture bounded integer.
+          maximum: 4094
+          minimum: 0
+          type: integer
+        state: &state
+          default: ENABLED
+          description: Fixture state.
+          enum:
+            - ENABLED
+            - DISABLED
+          type: string
+        comment: &comment
+          description: Fixture comment.
+          type: string
+    update_operation:
+      properties:
+        name: *name
+        ipaddress: *ipaddress
+        comment: *comment
+        domainresolvenow: &domainresolvenow
+          description: Fixture update-only trigger.
+          type: boolean
+    disable_operation:
+      properties:
+        name: *name
+        delay: &delay
+          description: Fixture disable option.
+          type: integer
+        graceful: &graceful
+          default: NO
+          description: Fixture disable option.
+          enum:
+            - YES
+            - NO
+          type: string
+    server:
+      properties:
+        Internal:
+          description: Fixture listing flag.
+          type: boolean
+        comment: *comment
+        delay: *delay
+        domain: *domain
+        domainresolvenow: *domainresolvenow
+        graceful: *graceful
+        ipaddress: *ipaddress
+        ipv6address: *ipv6address
+        name: *name
+        newname:
+          description: Fixture rename target.
+          type: string
+        querytype: *querytype
+        state: *state
+        statechangetimesec:
+          description: Fixture read-only value.
+          readOnly: true
+          type: string
+        td: *td
+info:
+  title: Test fixture for server
+  version: v1-99.9-1.1
+openapi: 3.0.0
+paths:
+  /server:
+    get:
+      operationId: get
+    post:
+      operationId: create_server
+      parameters:
+        - $ref: '#/components/parameters/server_post_action'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                server:
+                  allOf:
+                    - $ref: '#/components/schemas/server'
+                    - required:
+                        - name
+  '/server/{name}':
+    delete:
+      operationId: delete_server
+      parameters:
+        - in: path
+          name: name
+          required: true
+        - description: '> ` td ` : <value>, ***graceful*** : <value>,'
+          in: query
+          name: args
+          required: true
+    get:
+      operationId: get_byname
+    put:
+      operationId: update_server
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                server:
+                  allOf:
+                    - $ref: '#/components/schemas/update_operation'
+                    - required:
+                        - name
+tags:
+  - description: Fixture server resource.
+    name: server

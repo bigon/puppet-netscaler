@@ -1,0 +1,22 @@
+# frozen_string_literal: true
+
+source ENV['GEM_SOURCE'] || 'https://rubygems.org'
+
+group :test do
+  gem 'puppet-resource_api', '~> 2.0', require: false
+  gem 'voxpupuli-test', '~> 15.0', require: false
+  gem 'puppet_metadata', '~> 6.4', require: false
+  gem 'webmock', '~> 3.0', require: false
+end
+
+group :development do
+  gem 'overcommit', '>= 0.39.1', require: false
+end
+
+group :release do
+  gem 'voxpupuli-release', '~> 5.5', require: false
+end
+
+gem 'rake', require: false
+
+gem 'openvox', ENV.fetch('OPENVOX_GEM_VERSION', ['>= 8', '< 10']), require: false, groups: [:test]

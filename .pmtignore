@@ -1,0 +1,16 @@
+/docs/
+/pkg/
+/Gemfile
+/Gemfile.lock
+/vendor/
+/spec/
+/Rakefile
+/tools/
+/.bundle/
+/coverage/
+/.github/
+/.fixtures.yml
+/.gitignore
+/.pmtignore
+/.rubocop.yml
+/CLAUDE.md
