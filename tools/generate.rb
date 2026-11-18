@@ -18,7 +18,7 @@
 #   lib/puppet/provider/nitro_<res>/nitro_<res>.rb  thin provider
 require 'yaml'
 require 'fileutils'
-require 'cgi'
+require 'cgi/escape'
 require_relative '../lib/puppet_x/netscaler/compat_definitions'
 
 module NitroGenerator
