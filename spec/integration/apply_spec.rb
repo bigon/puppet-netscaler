@@ -376,6 +376,22 @@ describe 'applying netscaler resources', type: :integration do
       expect(servers).to have_been_requested.twice
     end
 
+    it 'lists the bindings again after deleting the entity they belong to' do
+      stub_request(:get, "#{base}/lbvserver").to_return(json('lbvserver' => [{ 'name' => 'vs1', 'servicetype' => 'HTTP' }]))
+      bindings = stub_request(:get, "#{base}/lbvserver_service_binding?bulkbindings=yes")
+                 .to_return(json('lbvserver_service_binding' => [{ 'name' => 'vs1', 'servicename' => 'svc1', 'weight' => '1' },
+                                                                 { 'name' => 'vs2', 'servicename' => 'svc2', 'weight' => '1' },]))
+                 .then.to_return(json('lbvserver_service_binding' => [{ 'name' => 'vs2', 'servicename' => 'svc2', 'weight' => '1' }]))
+      remove = stub_request(:delete, "#{base}/lbvserver/vs1").to_return(json({}))
+      # vs2/svc2 lists the bindings before vs1 goes; NITRO removes the bindings of vs1 with it
+      apply_all([[:nitro_lbvserver_service_binding, 'vs2/svc2', { weight: 1 }],
+                 [:nitro_lbvserver, 'vs1', { ensure: 'absent' }],
+                 [:nitro_lbvserver_service_binding, 'vs1/svc1', { ensure: 'absent' }],])
+      expect(remove).to have_been_requested.once
+      expect(bindings).to have_been_requested.twice
+      expect(a_request(:delete, %r{lbvserver_service_binding})).not_to have_been_made
+    end
+
     it 'falls back to one GET per object when the NITRO user may not list the type' do
       stub_request(:get, "#{base}/server").to_return(json({ 'errorcode' => 1, 'message' => 'Not authorized', 'severity' => 'ERROR' }, 403))
       one = stub_request(:get, "#{base}/server/web1").to_return(json('server' => [{ 'name' => 'web1', 'ipaddress' => '10.0.0.1' }]))

@@ -45,7 +45,7 @@ Requests flow: Resource API type → provider → `PuppetX::Netscaler::NitroReso
   - `binding`: PUT to add, `DELETE ?args=` to remove. NITRO cannot modify a binding, so a change unbinds and binds again with the current attributes, minus `rebind_exclude` (values NITRO reports but refuses on a bind, e.g. a servicegroup member's `ip`).
   - `settings`: no ensure, PUT only (e.g. `sslvserver`).
 
-  Only attributes present in the desired state are managed; nothing is ever unset. Writes invalidate the type's prefetch snapshot.
+  Only attributes present in the desired state are managed; nothing is ever unset. Writes invalidate the type's prefetch snapshot; a delete also invalidates the types that reference it (their autorequires), e.g. the bindings of a deleted lbvserver.
 - **Resource API get cache:** Resource API >= 2.0 caches `get` results on the type class for the whole process (shared across the devices of one `puppet device` run, never invalidated by our writes). Every generated type opts out (`render_get_cache` in `tools/generate.rb`, also used by `generate_compat.rb`), so the transport snapshot is the only cache, as on Resource API 1.9 (OpenVox 8).
 - **Providers:**
   - `NitroProvider` (`nitro_provider.rb`) is the base of all generated `nitro_*` providers. It maps Puppet attribute names to NITRO names; the namevar of entities is `name` in Puppet.

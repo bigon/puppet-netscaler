@@ -85,6 +85,16 @@ module PuppetX
         delete_record(client, rec)
       ensure
         forget(client)
+        dependents.each { |dependent| dependent.forget(client) }
+      end
+
+      # The resources that reference this one (from their autorequires), e.g.
+      # the bindings of an lbvserver: deleting an object may remove or change
+      # their rows on the appliance, so their listings are stale too
+      def dependents
+        @dependents ||= SPECS.filter_map do |name, s|
+          NitroResource.for(name) if name != resource && s['autorequire'].key?("nitro_#{resource}")
+        end
       end
 
       def create_record(client, rec)
@@ -217,6 +227,8 @@ module PuppetX
       def forget(client)
         client.invalidate(resource) if client.respond_to?(:invalidate)
       end
+      # called on the dependents of a deleted resource
+      protected :forget
 
       def extract(body)
         return [] if body.nil?
