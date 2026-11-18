@@ -10,6 +10,11 @@ module NitroResponses
   def json(body, status = 200)
     { status: status, body: JSON.generate(nitro_body(body)), headers: { 'Content-Type' => 'application/json; charset=utf-8' } }
   end
+
+  # A NITRO error answer
+  def nitro_error(errorcode, message, status)
+    json({ 'errorcode' => errorcode, 'message' => message, 'severity' => 'ERROR' }, status)
+  end
 end
 
 RSpec.configure do |c|

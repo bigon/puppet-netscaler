@@ -25,7 +25,7 @@ describe 'applying netscaler resources', type: :integration do
   after { FileUtils.rm_rf(vardir) }
 
   def not_found
-    json({ 'errorcode' => 258, 'message' => 'No such resource', 'severity' => 'ERROR' }, 404)
+    nitro_error(258, 'No such resource', 404)
   end
 
   # Resource API >= 2.0 would cache get() results on the type class for the
@@ -430,7 +430,7 @@ describe 'applying netscaler resources', type: :integration do
     end
 
     it 'falls back to one GET per object when the NITRO user may not list the type' do
-      stub_request(:get, "#{base}/server").to_return(json({ 'errorcode' => 1, 'message' => 'Not authorized', 'severity' => 'ERROR' }, 403))
+      stub_request(:get, "#{base}/server").to_return(nitro_error(1, 'Not authorized', 403))
       one = stub_request(:get, "#{base}/server/web1").to_return(json('server' => [{ 'name' => 'web1', 'ipaddress' => '10.0.0.1' }]))
       apply_all([[:nitro_server, 'web1', { ipaddress: '10.0.0.1' }]])
       expect(one).to have_been_requested.once

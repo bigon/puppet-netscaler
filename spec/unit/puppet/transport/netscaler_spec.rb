@@ -79,19 +79,19 @@ describe Puppet::Transport::Netscaler do
 
     it 'returns nil on HTTP 404' do
       stub_request(:get, "#{base}/server/nope")
-        .to_return(json({ 'errorcode' => 258, 'message' => 'No such resource [name, nope]', 'severity' => 'ERROR' }, 404))
+        .to_return(nitro_error(258, 'No such resource [name, nope]', 404))
       expect(transport.get('server', 'nope')).to be_nil
     end
 
     it 'returns nil on a "no such resource" error code' do
       stub_request(:get, "#{base}/server/nope")
-        .to_return(json({ 'errorcode' => 258, 'message' => 'No such resource', 'severity' => 'ERROR' }, 599))
+        .to_return(nitro_error(258, 'No such resource', 599))
       expect(transport.get('server', 'nope')).to be_nil
     end
 
     it 'raises on other errors' do
       stub_request(:get, "#{base}/server")
-        .to_return(json({ 'errorcode' => 354, 'message' => 'Invalid username or password', 'severity' => 'ERROR' }, 401))
+        .to_return(nitro_error(354, 'Invalid username or password', 401))
       expect { transport.get('server') }.to raise_error(described_class::Error, %r{HTTP 401, errorcode 354\): Invalid username or password}) { |e|
         expect(e.errorcode).to eq(354)
         expect(e.status).to eq(401)
@@ -213,7 +213,7 @@ describe Puppet::Transport::Netscaler do
 
     it 'raises when NITRO reports an error' do
       stub_request(:post, "#{base}/server")
-        .to_return(json({ 'errorcode' => 273, 'message' => 'Resource already exists', 'severity' => 'ERROR' }, 409))
+        .to_return(nitro_error(273, 'Resource already exists', 409))
       expect { transport.post('server', 'name' => 'web1') }.to raise_error(described_class::Error, %r{Resource already exists})
     end
 
@@ -350,8 +350,8 @@ describe Puppet::Transport::Netscaler do
     end
 
     it 'tolerates sources the NITRO user cannot read' do
-      stub_facts(hardware: json({ 'errorcode' => 1, 'message' => 'Not authorized', 'severity' => 'ERROR' }, 403))
-      stub_request(:get, "#{stat}/ns").to_return(json({ 'errorcode' => 1, 'message' => 'Not authorized', 'severity' => 'ERROR' }, 403))
+      stub_facts(hardware: nitro_error(1, 'Not authorized', 403))
+      stub_request(:get, "#{stat}/ns").to_return(nitro_error(1, 'Not authorized', 403))
       facts = transport.facts(nil)
       expect(facts['netscaler']).not_to include('hardware', 'serialnumber')
       expect(facts).not_to include('cpuusage')
@@ -359,7 +359,7 @@ describe Puppet::Transport::Netscaler do
     end
 
     it 'fails when the appliance cannot be queried at all' do
-      stub_request(:get, "#{base}/nsversion").to_return(json({ 'errorcode' => 354, 'message' => 'Invalid username or password', 'severity' => 'ERROR' }, 401))
+      stub_request(:get, "#{base}/nsversion").to_return(nitro_error(354, 'Invalid username or password', 401))
       expect { transport.facts(nil) }.to raise_error(described_class::Error)
     end
   end

@@ -46,7 +46,7 @@ describe PuppetX::Netscaler::NitroProvider do
 
     it 'fetches only the requested names' do
       stub_request(:get, "#{base}/server/web1").to_return(json('server' => [{ 'name' => 'web1' }]))
-      stub_request(:get, "#{base}/server/web2").to_return(json({ 'errorcode' => 258, 'message' => 'No such resource', 'severity' => 'ERROR' }, 404))
+      stub_request(:get, "#{base}/server/web2").to_return(nitro_error(258, 'No such resource', 404))
       expect(provider.get(context, %w[web1 web2])).to eq([{ ensure: 'present', name: 'web1' }])
     end
 
@@ -61,7 +61,7 @@ describe PuppetX::Netscaler::NitroProvider do
 
     it 'fetches objects one by one when NITRO refuses the listing' do
       allow(context).to receive(:transport).and_return(prefetching)
-      stub_request(:get, "#{base}/server").to_return(json({ 'errorcode' => 1145, 'message' => 'Not authorized', 'severity' => 'ERROR' }, 403))
+      stub_request(:get, "#{base}/server").to_return(nitro_error(1145, 'Not authorized', 403))
       one = stub_request(:get, "#{base}/server/web1").to_return(json('server' => [{ 'name' => 'web1' }]))
       expect(provider.get(context, ['web1'])).to eq([{ ensure: 'present', name: 'web1' }])
       expect(one).to have_been_requested
@@ -109,7 +109,7 @@ describe PuppetX::Netscaler::NitroProvider do
     end
 
     it 'reports NITRO errors through the context' do
-      stub_request(:post, "#{base}/server").to_return(json({ 'errorcode' => 273, 'message' => 'Resource already exists', 'severity' => 'ERROR' }, 409))
+      stub_request(:post, "#{base}/server").to_return(nitro_error(273, 'Resource already exists', 409))
       expect(context).to receive(:err).with(%r{Resource already exists})
       provider.set(context, 'web1' => { is: nil, should: { name: 'web1', ensure: 'present', ipaddress: '10.0.0.1' } })
       expect(context).to be_failed
