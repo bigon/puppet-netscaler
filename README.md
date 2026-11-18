@@ -128,6 +128,16 @@ the run.
   The exception is `nitro_lbvserver` `persistavpno` (`netscaler_lbvserver`
   `persist_avp_no`), nested AVP numbers listed from parent to child: its
   order is kept and compared.
+* **IP addresses** (for example `ipaddress`, `ipv46`, `ippattern`/`ipmask`,
+  `lbmonitor` `destip`, and their `netscaler_*` counterparts such as
+  `netscaler_server` `address`) are compared in the form NITRO returns them:
+  IPv6 compressed and in lower case (`2001:DB8:0::1` is `2001:db8::1`), IPv4
+  without leading zeros (`010.0.0.1` is `10.0.0.1`, NITRO reads them as
+  decimal). Another spelling of the same address is not a change, and the
+  canonical form is what is sent. Domain names and other values are left as
+  is. Names stay text: a server NITRO creates on its own for an IP (a
+  service or a service group member given by `ip`) is named after the
+  canonical form, so refer to it by that name.
 * **Write-only secrets** (`lbmonitor` `password`/`secondarypassword`/`radkey`,
   `sslcertkey` `passplain`) are sent but never compared, because NITRO does not
   return them.

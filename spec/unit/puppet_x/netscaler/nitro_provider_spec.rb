@@ -150,6 +150,11 @@ describe PuppetX::Netscaler::NitroProvider do
         .to eq([{ name: 'm1', respcode: %w[200 301], interval: 5 }])
     end
 
+    it 'gives the IP addresses it is given the form NITRO returns' do
+      expect(provider.canonicalize(context, [{ name: 'm1', destip: '2001:0DB8::0002', ipaddress: ['2001:DB8::1', '010.0.0.1'], sipuri: 'sip:2001:DB8::1' }]))
+        .to eq([{ name: 'm1', destip: '2001:db8::2', ipaddress: ['10.0.0.1', '2001:db8::1'], sipuri: 'sip:2001:DB8::1' }])
+    end
+
     def sensitive(value)
       Puppet::Pops::Types::PSensitiveType::Sensitive.new(value)
     end

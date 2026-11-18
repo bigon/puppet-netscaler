@@ -84,6 +84,18 @@ describe NitroGenerator do
       expect { spec_for('service', 'ordered' => ['port']) }.to raise_error(ArgumentError, %r{port is not a list})
     end
 
+    it 'marks the attributes holding IP addresses' do
+      ip = spec_for('service', 'ip_addresses' => %w[ip idlist])['attributes']
+      expect(ip['ip']).to include('ip_address' => true)
+      expect(ip['idlist']).to include('ip_address' => true)
+      expect(spec['attributes']['ip']).not_to have_key('ip_address')
+    end
+
+    it 'rejects ip_addresses on unknown attributes and on numbers' do
+      expect { spec_for('service', 'ip_addresses' => ['nope']) }.to raise_error(ArgumentError, %r{unknown attributes nope})
+      expect { spec_for('service', 'ip_addresses' => ['port']) }.to raise_error(ArgumentError, %r{port is not a string or a list})
+    end
+
     it 'keeps typed items as strings' do
       expect(spec['attributes']['namelist']).to include('kind' => 'array', 'type' => 'Optional[Array[String]]')
       expect(spec['attributes']['namelist']).not_to have_key('items')

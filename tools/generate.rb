@@ -190,6 +190,7 @@ module NitroGenerator
     write_only = cfg.fetch('write_only', [])
     sensitive = cfg.fetch('sensitive', [])
     ordered = cfg.fetch('ordered', [])
+    ip_addresses = cfg.fetch('ip_addresses', [])
     init_only_extra = cfg.fetch('init_only', [])
 
     namevars = cfg['namevars'] || [key]
@@ -243,6 +244,11 @@ module NitroGenerator
       }
       attributes[pname]['items'] = 'integer' if item_kind(schema) == 'integer'
       attributes[pname]['sensitive'] = true if sensitive.include?(api)
+      if ip_addresses.include?(api)
+        raise DefinitionError, "#{resource}: ip_addresses attribute #{api} is not a string or a list" unless %w[string array].include?(attr_kind(schema))
+
+        attributes[pname]['ip_address'] = true
+      end
       next unless ordered.include?(api)
       raise DefinitionError, "#{resource}: ordered attribute #{api} is not a list" unless attr_kind(schema) == 'array'
 
@@ -260,8 +266,8 @@ module NitroGenerator
     configured_delete_args = (kind == 'binding') ? (namevars - [key]) + cfg.fetch('delete_args', []) : cfg.fetch('delete_args', [])
     rebind_exclude = cfg.fetch('rebind_exclude', [])
     update_with = cfg.fetch('update_with', {})
-    unknown = (rebind_exclude + sensitive + ordered + update_with.keys + update_with.values.flatten).reject { |a| attributes.values.any? { |at| at['api'] == a } }
-    raise DefinitionError, "#{resource}: rebind_exclude/sensitive/ordered/update_with name unknown attributes #{unknown.join(', ')}" unless unknown.empty?
+    unknown = (rebind_exclude + sensitive + ordered + ip_addresses + update_with.keys + update_with.values.flatten).reject { |a| attributes.values.any? { |at| at['api'] == a } }
+    raise DefinitionError, "#{resource}: rebind_exclude/sensitive/ordered/ip_addresses/update_with name unknown attributes #{unknown.join(', ')}" unless unknown.empty?
     raise DefinitionError, "#{resource}: rebind_exclude is only for bindings" if kind != 'binding' && !rebind_exclude.empty?
 
     {
@@ -434,7 +440,7 @@ module NitroGenerator
 
   # What a NITRO change can affect, per resource and per attribute
   SPEC_FIELDS = %w[kind key namevars create_required update_required delete_args rebind_exclude update_with state_actions action_updates title_format autorequire].freeze
-  ATTRIBUTE_FIELDS = %w[api kind items ordered type behaviour create update disable_param].freeze
+  ATTRIBUTE_FIELDS = %w[api kind items ordered ip_address type behaviour create update disable_param].freeze
 
   def build_all(oas_dir, rest_dir, config_file)
     config = YAML.safe_load_file(config_file) || {}

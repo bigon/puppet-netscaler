@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'ipaddr'
 require_relative 'specs'
 require_relative '../../puppet/transport/netscaler'
 
@@ -26,6 +27,38 @@ module PuppetX
         return value unless attr['kind'] == 'array' && value.is_a?(Array) && !attr['ordered']
 
         value.sort_by { |v| v.is_a?(Numeric) ? [0, v, ''] : [1, 0, v.to_s] }
+      end
+
+      # The value in the form compared with what NITRO returns: IP
+      # addresses normalised (see canonical_ip) when the attribute holds
+      # them, lists sorted (see canonical_list)
+      def self.canonical(attr, value)
+        value = canonical_ip(value) if attr['ip_address']
+        canonical_list(attr, value)
+      end
+
+      IPV4 = %r{\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\z}.freeze
+      IPV6 = %r{\A[0-9A-Fa-f:.]*:[0-9A-Fa-f:.]*\z}.freeze
+
+      # An IP address in the form NITRO returns it: IPv6 compressed and in
+      # lower case (2001:DB8:0::1 => 2001:db8::1), IPv4 without leading
+      # zeros, which NITRO reads as decimal (010.0.0.1 => 10.0.0.1). The
+      # address is the same, so both forms are accepted by NITRO, but only
+      # the canonical one compares equal to what it returns. Anything else
+      # (domain names, '*', prefixes, zone ids) is returned untouched.
+      def self.canonical_ip(value)
+        return value.map { |v| canonical_ip(v) } if value.is_a?(Array)
+        return value unless value.is_a?(String)
+
+        if (m = IPV4.match(value))
+          octets = m.captures.map { |o| Integer(o, 10) }
+          return (octets.all? { |o| o <= 255 }) ? octets.join('.') : value
+        end
+        return value unless value.match?(IPV6)
+
+        IPAddr.new(value).to_s
+      rescue IPAddr::Error
+        value
       end
 
       def self.for(resource)

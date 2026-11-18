@@ -86,6 +86,29 @@ describe 'applying netscaler resources', type: :integration do
       no_writes
     end
 
+    it 'reads another spelling of the IP address NITRO returns as no change' do
+      stub_lookup('lbvserver', 'vs1')
+        .to_return(json('lbvserver' => [{ 'name' => 'vs1', 'servicetype' => 'HTTP', 'ipv46' => '2001:db8::1', 'ippattern' => '0.0.0.0', 'ipmask' => '*' }]))
+      expect(apply(:nitro_lbvserver, 'vs1', servicetype: 'HTTP', ipv46: '2001:0DB8:0::1', ipmask: '*')).not_to be_changed
+      stub_lookup('server', 's1').to_return(json('server' => [{ 'name' => 's1', 'ipaddress' => '10.1.2.3', 'domain' => '' }]))
+      expect(apply(:netscaler_server, 's1', address: '010.001.002.003')).not_to be_changed
+      no_writes
+    end
+
+    it 'creates a server with a zero-filled IPv4 address as an IP based server' do
+      stub_lookup('server', 's1').to_return(not_found)
+      create = stub_request(:post, "#{base}/server").with(body: { 'server' => { 'name' => 's1', 'ipaddress' => '10.1.2.3' } }).to_return(json({}, 201))
+      expect(apply(:netscaler_server, 's1', address: '010.001.002.003')).to be_changed
+      expect(create).to have_been_requested.once
+    end
+
+    it 'sends a changed IP address in the form NITRO returns' do
+      stub_lookup('lbvserver', 'vs1').to_return(json('lbvserver' => [{ 'name' => 'vs1', 'servicetype' => 'HTTP', 'ipv46' => '2001:db8::1' }]))
+      update = stub_request(:put, "#{base}/lbvserver/vs1").with(body: { 'lbvserver' => { 'name' => 'vs1', 'ipv46' => '2001:db8::2' } }).to_return(json({}))
+      expect(apply(:netscaler_lbvserver, 'vs1', ip_address: '2001:DB8::0002')).to be_changed
+      expect(update).to have_been_requested.once
+    end
+
     it 'does not compare attributes NITRO never returns' do
       stub_lookup('service', 'svc1')
         .to_return(json('service' => [{ 'name' => 'svc1', 'servicetype' => 'HTTP', 'port' => 80, 'ipaddress' => '10.0.0.1', 'svrstate' => 'UP' }]))

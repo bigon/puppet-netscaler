@@ -134,13 +134,15 @@ module PuppetX
           value = value.to_s if a['behaviour'] == 'namevar'
           next unless valid?(context, name, value)
 
-          result[name.to_sym] = conceal(a, NitroResource.canonical_list(a, value))
+          result[name.to_sym] = conceal(a, NitroResource.canonical(a, value))
         end
         add_title(result)
       end
 
       # NITRO lists (response codes, IP addresses, ...) are unordered sets:
-      # sort them so a different order is not reported as a change.
+      # sort them so a different order is not reported as a change. IP
+      # addresses take the form NITRO returns (2001:DB8:0::1 => 2001:db8::1),
+      # so another spelling of the same address is not a change either.
       #
       # Bindings also get their composite :title: Resource API canonicalizes
       # the declared attributes when it builds the resource, and that :title
@@ -156,7 +158,7 @@ module PuppetX
         for_flush = flush_target_state?
         resources.each do |r|
           attributes.each do |name, a|
-            r[name.to_sym] = conceal(a, NitroResource.canonical_list(a, r[name.to_sym])) if r.key?(name.to_sym)
+            r[name.to_sym] = conceal(a, NitroResource.canonical(a, r[name.to_sym])) if r.key?(name.to_sym)
           end
           add_title(r) unless for_flush
         end

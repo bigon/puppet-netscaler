@@ -140,6 +140,11 @@ describe PuppetX::Netscaler::CompatProvider do
       expect(provider.get(context, ['s1'])).to eq([{ ensure: 'present', name: 's1', address: 'www.example.com' }])
     end
 
+    it 'compares IP addresses in the form NITRO returns, and leaves domains alone' do
+      expect(provider.canonicalize(context, [{ name: 's1', address: '2001:DB8:0::1', translation_ip_address: '010.0.0.1' }, { name: 's2', address: 'WWW.example.com' }]))
+        .to eq([{ name: 's1', address: '2001:db8::1', translation_ip_address: '10.0.0.1' }, { name: 's2', address: 'WWW.example.com' }])
+    end
+
     it 'refuses to change the domain of a domain based server' do
       expect(context).to receive(:err).with(%r{domain cannot be changed})
       provider.set(context, change({ ensure: 'present', name: 's1', address: 'a.example.com' }, ensure: 'present', name: 's1', address: 'b.example.com'))

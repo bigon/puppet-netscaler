@@ -97,7 +97,14 @@ module PuppetX
         items = Array(value).map do |v|
           (native['items'] == 'integer' && v.to_s.match?(%r{\A\d+\z})) ? Integer(v.to_s, 10) : v.to_s
         end
-        NitroResource.canonical_list(native, items)
+        NitroResource.canonical(native, items)
+      end
+
+      # A scalar in the canonical form of the backing nitro_* attribute (IP
+      # addresses as NITRO returns them, see NitroResource.canonical_ip)
+      def scalar(compat, attr, value)
+        native = native(compat, attr)
+        (native && native['ip_address']) ? NitroResource.canonical_ip(value) : value
       end
 
       # NITRO's spelling of an enum value. puppetlabs-netscaler accepted any
@@ -182,7 +189,7 @@ module PuppetX
                       when :upcase then Compat.enum(compat, a, r[name])
                       when :integer then (r[name].is_a?(String) && r[name].match?(%r{\A\d+\z})) ? Integer(r[name], 10) : r[name]
                       when :array then Compat.list(compat, a, r[name])
-                      else NitroProvider.conceal(Compat.sensitive?(compat, a), r[name])
+                      else NitroProvider.conceal(Compat.sensitive?(compat, a), Compat.scalar(compat, a, r[name]))
                       end
           end
         end
@@ -249,7 +256,7 @@ module PuppetX
         compat[:attributes].each do |name, a|
           next if Compat.parameter?(compat, a) || rec[a[:api]].nil?
 
-          value = (a[:kind] == :array) ? Compat.list(compat, a, rec[a[:api]]) : rec[a[:api]]
+          value = (a[:kind] == :array) ? Compat.list(compat, a, rec[a[:api]]) : Compat.scalar(compat, a, rec[a[:api]])
           result[name] = NitroProvider.conceal(Compat.sensitive?(compat, a), value)
         end
         result

@@ -97,6 +97,54 @@ describe PuppetX::Netscaler::NitroResource do
     end
   end
 
+  describe '.canonical_ip' do
+    # Each pair: what was sent to a NetScaler CPX, what NITRO returned
+    {
+      '2001:0DB8:0000:0000:0000:0000:0000:00AB' => '2001:db8::ab',
+      '2001:DB8:0::Ac' => '2001:db8::ac',
+      '2001:0:0:1:0:0:1:1' => '2001::1:0:0:1:1',
+      '2001:db8:0:1:1:1:1:1' => '2001:db8:0:1:1:1:1:1',
+      '2001:db8:0:0:1:0:0:0' => '2001:db8:0:0:1::',
+      '2001:db8:0:0:1:0:0:1' => '2001:db8::1:0:0:1',
+      '0:0:0:0:0:0:0:2' => '::2',
+      '010.001.002.003' => '10.1.2.3',
+      '10.01.2.9' => '10.1.2.9',
+      '255.255.255.000' => '255.255.255.0',
+    }.each do |sent, returned|
+      it "reads #{sent} as #{returned}, like NITRO" do
+        expect(described_class.canonical_ip(sent)).to eq(returned)
+      end
+    end
+
+    it 'keeps canonical addresses' do
+      ['2001:db8::ab', '10.1.2.3', '0.0.0.0', '::'].each { |ip| expect(described_class.canonical_ip(ip)).to eq(ip) }
+    end
+
+    it 'leaves anything but a plain address untouched' do
+      ['web.example.com', 'web1', '*', '', '0', '10.1.2.3/24', '2001:db8::/32', '[2001:db8::1]', 'fe80::a%1', '256.1.2.3', '1.2.3', '2001:db8::g', 'cafe'].each do |value|
+        expect(described_class.canonical_ip(value)).to eq(value)
+      end
+    end
+
+    it 'handles lists and leaves other types alone' do
+      expect(described_class.canonical_ip(['2001:DB8::1', '010.0.0.1', 'x'])).to eq(['2001:db8::1', '10.0.0.1', 'x'])
+      expect(described_class.canonical_ip(nil)).to be_nil
+      expect(described_class.canonical_ip(80)).to eq(80)
+    end
+  end
+
+  describe '.canonical' do
+    it 'normalises the addresses of IP attributes, then sorts lists' do
+      list = { 'kind' => 'array', 'ip_address' => true }
+      expect(described_class.canonical(list, ['2001:DB8::2', '010.0.0.1'])).to eq(['10.0.0.1', '2001:db8::2'])
+      expect(described_class.canonical({ 'kind' => 'string', 'ip_address' => true }, '2001:DB8::1')).to eq('2001:db8::1')
+    end
+
+    it 'leaves the values of other attributes untouched' do
+      expect(described_class.canonical({ 'kind' => 'string' }, '2001:DB8::1')).to eq('2001:DB8::1')
+    end
+  end
+
   describe '#create' do
     it 'POSTs the create attributes of an entity' do
       expect(client).to receive(:post).with('server', { 'name' => 'web1', 'ipaddress' => '10.0.0.1', 'state' => 'DISABLED' })

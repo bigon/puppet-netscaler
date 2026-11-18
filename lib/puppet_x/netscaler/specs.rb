@@ -58,6 +58,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "ipv6address" => {
           "api" => "ipv6address",
@@ -106,6 +107,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "translationmask" => {
           "api" => "translationmask",
@@ -114,6 +116,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "domainresolvenow" => {
           "api" => "domainresolvenow",
@@ -321,6 +324,7 @@ module PuppetX
           "create" => true,
           "update" => false,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "maxbandwidth" => {
           "api" => "maxbandwidth",
@@ -537,6 +541,7 @@ module PuppetX
           "create" => false,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "monitor_name_svc" => {
           "api" => "monitor_name_svc",
@@ -973,6 +978,7 @@ module PuppetX
           "create" => false,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "order" => {
           "api" => "order",
@@ -1094,6 +1100,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "nameserver" => {
           "api" => "nameserver",
@@ -1102,6 +1109,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "order" => {
           "api" => "order",
@@ -1453,6 +1461,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "ippattern" => {
           "api" => "ippattern",
@@ -1461,6 +1470,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "ipset" => {
           "api" => "ipset",
@@ -1477,6 +1487,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "l2conn" => {
           "api" => "l2conn",
@@ -1613,6 +1624,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "netprofile" => {
           "api" => "netprofile",
@@ -1695,6 +1707,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "port" => {
           "api" => "port",
@@ -2295,6 +2308,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "destport" => {
           "api" => "destport",
@@ -2319,6 +2333,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "dispatcherport" => {
           "api" => "dispatcherport",
@@ -2424,6 +2439,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "hostname" => {
           "api" => "hostname",
@@ -2464,6 +2480,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "iptunnel" => {
           "api" => "iptunnel",
@@ -2649,6 +2666,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "radkey" => {
           "api" => "radkey",
@@ -2682,6 +2700,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "recv" => {
           "api" => "recv",
@@ -3234,6 +3253,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "order" => {
           "api" => "order",
@@ -3526,6 +3546,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "ippattern" => {
           "api" => "ippattern",
@@ -3534,6 +3555,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "ipset" => {
           "api" => "ipset",
@@ -3550,6 +3572,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "l2conn" => {
           "api" => "l2conn",
@@ -3678,6 +3701,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "port" => {
           "api" => "port",
@@ -3942,6 +3966,7 @@ module PuppetX
           "create" => false,
           "update" => true,
           "disable_param" => false,
+          "ip_address" => true,
         }.freeze,
         "cookiedomain" => {
           "api" => "cookiedomain",

@@ -27,6 +27,11 @@
 #   init_only:      extra attributes that cannot be changed after creation.
 #   ordered:        lists whose order matters to NITRO; the others are sets,
 #                   compared and sent sorted.
+#   ip_addresses:   attributes holding IP addresses or masks (or lists of
+#                   them). NITRO returns them in a canonical form (IPv6
+#                   compressed and lower case, IPv4 without leading zeros):
+#                   both sides are compared in that form. Values that are
+#                   not a plain address (names, '*', CIDR) are left as is.
 #   sensitive:      secrets: the type also accepts Sensitive values, and the
 #                   value read back is wrapped in Sensitive, so it is
 #                   redacted in logs and reports.
@@ -36,10 +41,13 @@
 #   kind:           'settings' for entities that cannot be added/deleted
 #                   (e.g. sslvserver): only PUT updates are done.
 ---
-server: {}
+server:
+  ip_addresses: [ipaddress, translationip, translationmask]
 service:
+  ip_addresses: [ip, ipaddress]
   autorequire: {servername: [server]}
-servicegroup: {}
+servicegroup:
+  ip_addresses: [nameserver]
 servicegroup_servicegroupmember_binding:
   namevars: [servicegroupname, servername, port]
   title_pattern: '\A(?<servicegroupname>[^/]+)/(?<servername>.+):(?<port>\d+)\z'
@@ -48,10 +56,12 @@ servicegroup_servicegroupmember_binding:
   # bind ("Arguments cannot both be specified [serverName, IP]"). Checked on
   # a NetScaler CPX: it accepts every other attribute it reports.
   rebind_exclude: [ip]
+  ip_addresses: [ip, nameserver]
   autorequire: {servicegroupname: [servicegroup], servername: [server]}
 lbvserver:
   # Nested AVP numbers, from parent to child
   ordered: [persistavpno]
+  ip_addresses: [ipv46, ippattern, ipmask, netmask, persistmask]
   autorequire: {backupvserver: [lbvserver]}
 lbvserver_service_binding:
   namevars: [name, servicename]
@@ -63,6 +73,7 @@ lbmonitor:
   write_only: [password, secondarypassword, radkey]
   sensitive: [password, secondarypassword, radkey, snmpcommunity, secureargs]
   init_only: [type]
+  ip_addresses: [destip, dispatcherip, hostipaddress, radnasip, radframedip, ipaddress]
 service_lbmonitor_binding:
   namevars: [name, monitor_name]
   autorequire: {name: [service], monitor_name: [lbmonitor]}
@@ -71,8 +82,10 @@ servicegroup_lbmonitor_binding:
   delete_args: [port]
   # NITRO refuses state together with monitor_name on a bind
   rebind_exclude: [state]
+  ip_addresses: [nameserver]
   autorequire: {servicegroupname: [servicegroup], monitor_name: [lbmonitor]}
-csvserver: {}
+csvserver:
+  ip_addresses: [ipv46, ippattern, ipmask, persistmask, backupip]
 cspolicy:
   autorequire: {action: [csaction]}
 csaction:
