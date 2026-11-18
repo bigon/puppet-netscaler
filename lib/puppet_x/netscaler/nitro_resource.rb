@@ -11,6 +11,13 @@ module PuppetX
     # attributes present in the desired record are managed: nothing is unset
     # behind the user's back.
     class NitroResource
+      # Runtime states (svrstate/curstate) of a disabled entity, including
+      # the transition of a graceful or delayed disable: reading those as
+      # ENABLED would send the disable again, which can restart the delay.
+      DISABLED_RUNTIME_STATES = [
+        'OUT OF SERVICE', 'GOING OUT OF SERVICE', 'DOWN WHEN GOING OUT OF SERVICE', 'DISABLED',
+      ].freeze
+
       attr_reader :spec
 
       def self.for(resource)
@@ -193,9 +200,9 @@ module PuppetX
           h[k] = coerce(a['kind'], v)
         end
         # Some entities (service, lbvserver, ...) only report their runtime
-        # state; a disabled entity is always OUT OF SERVICE.
+        # state, from which the configured one is derived.
         if spec['state_actions'] && !rec.key?('state') && (runtime = row['svrstate'] || row['curstate'])
-          rec['state'] = runtime.to_s.casecmp('OUT OF SERVICE').zero? ? 'DISABLED' : 'ENABLED'
+          rec['state'] = DISABLED_RUNTIME_STATES.include?(runtime.to_s.upcase) ? 'DISABLED' : 'ENABLED'
         end
         rec
       end

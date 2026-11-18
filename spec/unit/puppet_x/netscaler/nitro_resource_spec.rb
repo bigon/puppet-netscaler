@@ -58,6 +58,19 @@ describe PuppetX::Netscaler::NitroResource do
       expect(res('lbvserver').normalize('name' => 'v', 'curstate' => 'DOWN')).to include('state' => 'ENABLED')
     end
 
+    ['GOING OUT OF SERVICE', 'DOWN WHEN GOING OUT OF SERVICE', 'DISABLED'].each do |runtime|
+      it "reads #{runtime} as DISABLED" do
+        expect(res('service').normalize('name' => 's', 'svrstate' => runtime)).to include('state' => 'DISABLED')
+        expect(res('csvserver').normalize('name' => 'v', 'curstate' => runtime)).to include('state' => 'DISABLED')
+      end
+    end
+
+    %w[UP DOWN UNKNOWN BUSY NS_EMPTY_STR Unknown].each do |runtime|
+      it "reads #{runtime} as ENABLED" do
+        expect(res('lbvserver').normalize('name' => 'v', 'curstate' => runtime)).to include('state' => 'ENABLED')
+      end
+    end
+
     it 'keeps the configured state when reported' do
       expect(res('server').normalize('name' => 's', 'state' => 'DISABLED', 'svrstate' => 'UP')).to include('state' => 'DISABLED')
     end
