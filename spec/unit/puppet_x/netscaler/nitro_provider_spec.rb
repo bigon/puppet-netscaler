@@ -218,6 +218,41 @@ describe PuppetX::Netscaler::NitroProvider do
       expect(should[:title]).to eq('sg1/web1:80')
     end
 
+    context 'when it logs a change' do
+      def title
+        { servicegroupname: 'sg1', servername: 'web1', port: '80' }
+      end
+
+      def present
+        title.merge(ensure: 'present', weight: 1)
+      end
+
+      it 'names the binding it creates by its composite title' do
+        stub_request(:put, "#{base}/servicegroup_servicegroupmember_binding").to_return(json({}, 201))
+        expect(context).to receive(:creating).with('sg1/web1:80').and_call_original
+        provider.set(context, title => { is: nil, should: present })
+      end
+
+      it 'names the binding it updates by its composite title' do
+        stub_request(:delete, %r{\A#{Regexp.escape(base)}/servicegroup_servicegroupmember_binding/sg1}).to_return(json({}))
+        stub_request(:put, "#{base}/servicegroup_servicegroupmember_binding").to_return(json({}, 201))
+        expect(context).to receive(:updating).with('sg1/web1:80').and_call_original
+        provider.set(context, title => { is: present.merge(title: 'sg1/web1:80'), should: present.merge(weight: 2) })
+      end
+
+      it 'names the binding it deletes by its composite title' do
+        stub_request(:delete, %r{\A#{Regexp.escape(base)}/servicegroup_servicegroupmember_binding/sg1}).to_return(json({}))
+        expect(context).to receive(:deleting).with('sg1/web1:80').and_call_original
+        provider.set(context, title => { is: present.merge(title: 'sg1/web1:80'), should: title.merge(ensure: 'absent') })
+      end
+
+      it 'names the binding it deletes by the title it read when the change lacks a namevar' do
+        stub_request(:delete, %r{\A#{Regexp.escape(base)}/servicegroup_servicegroupmember_binding/sg1}).to_return(json({}))
+        expect(context).to receive(:deleting).with('sg1/web1:80').and_call_original
+        provider.set(context, title => { is: present.merge(title: 'sg1/web1:80'), should: { servicegroupname: 'sg1', ensure: 'absent' } })
+      end
+    end
+
     it 'leaves incomplete resources alone' do
       expect(provider.canonicalize(context, [{ servicegroupname: 'sg1' }])).to eq([{ servicegroupname: 'sg1' }])
     end

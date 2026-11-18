@@ -91,13 +91,17 @@ module PuppetX
           is_present = nitro.settings? || is[:ensure].to_s == 'present'
           should_present = nitro.settings? || should[:ensure].to_s != 'absent'
           client = context.transport
+          # Resource API keys the changes of a type with several namevars
+          # (the bindings) by a hash of them, which reads as
+          # {:name=>"vs1", ...} in the log lines: log the composite title
+          label = should[:title] || is[:title] || title
 
           if should_present && !is_present
-            context.creating(title) { nitro.create(client, to_nitro(should)) }
+            context.creating(label) { nitro.create(client, to_nitro(should)) }
           elsif should_present
-            context.updating(title) { nitro.update(client, to_nitro(is), to_nitro(should)) }
+            context.updating(label) { nitro.update(client, to_nitro(is), to_nitro(should)) }
           elsif is_present
-            context.deleting(title) { nitro.delete(client, to_nitro(is)) }
+            context.deleting(label) { nitro.delete(client, to_nitro(is)) }
           else
             next
           end
