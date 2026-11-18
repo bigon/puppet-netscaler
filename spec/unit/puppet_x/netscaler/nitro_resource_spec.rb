@@ -88,6 +88,10 @@ describe PuppetX::Netscaler::NitroResource do
       expect(described_class.canonical_list(list, [10, 'b', 9.5, 'a', 3])).to eq([3, 9.5, 10, 'a', 'b'])
     end
 
+    it 'keeps the order of ordered lists' do
+      expect(described_class.canonical_list(list.merge('ordered' => true), [300, 5])).to eq([300, 5])
+    end
+
     it 'leaves other values alone' do
       expect(described_class.canonical_list({ 'kind' => 'string' }, 'b')).to eq('b')
     end

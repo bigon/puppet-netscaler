@@ -61,6 +61,16 @@ describe NitroGenerator do
       expect(spec['attributes']['idlist']).to include('kind' => 'array', 'items' => 'integer', 'type' => 'Optional[Array[Integer[1, 4294967295]]]')
     end
 
+    it 'marks the lists whose order matters' do
+      expect(spec_for('service', 'ordered' => ['idlist'])['attributes']['idlist']).to include('ordered' => true)
+      expect(spec['attributes']['idlist']).not_to have_key('ordered')
+    end
+
+    it 'rejects ordered on unknown attributes and on scalars' do
+      expect { spec_for('service', 'ordered' => ['nope']) }.to raise_error(ArgumentError, %r{unknown attributes nope})
+      expect { spec_for('service', 'ordered' => ['port']) }.to raise_error(ArgumentError, %r{port is not a list})
+    end
+
     it 'keeps typed items as strings' do
       expect(spec['attributes']['namelist']).to include('kind' => 'array', 'type' => 'Optional[Array[String]]')
       expect(spec['attributes']['namelist']).not_to have_key('items')

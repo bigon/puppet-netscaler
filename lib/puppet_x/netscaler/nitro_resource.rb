@@ -20,10 +20,10 @@ module PuppetX
 
       attr_reader :spec
 
-      # NITRO lists are sets, compared and sent sorted: numbers by value,
-      # anything else as text
+      # NITRO lists are sets, compared and sent sorted (numbers by value,
+      # anything else as text), unless the attribute is ordered
       def self.canonical_list(attr, value)
-        return value unless attr['kind'] == 'array' && value.is_a?(Array)
+        return value unless attr['kind'] == 'array' && value.is_a?(Array) && !attr['ordered']
 
         value.sort_by { |v| v.is_a?(Numeric) ? [0, v, ''] : [1, 0, v.to_s] }
       end
@@ -270,7 +270,11 @@ module PuppetX
 
       def same?(attr, current, desired)
         return false if current.nil?
-        return current.map(&:to_s).sort == desired.map(&:to_s).sort if attr['kind'] == 'array' && current.is_a?(Array) && desired.is_a?(Array)
+
+        if attr['kind'] == 'array' && current.is_a?(Array) && desired.is_a?(Array)
+          # as text: compat lists may hold strings where NITRO has numbers
+          current, desired = [current, desired].map { |list| attr['ordered'] ? list.map(&:to_s) : list.map(&:to_s).sort }
+        end
 
         current == desired
       end

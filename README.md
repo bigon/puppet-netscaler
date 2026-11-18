@@ -125,6 +125,9 @@ the run.
   `weight`) is unbound and bound again.
 * **Lists** (for example `nitro_lbmonitor` `respcode`) are unordered sets in
   NITRO: they are compared sorted, so a different order is not a change.
+  The exception is `nitro_lbvserver` `persistavpno` (`netscaler_lbvserver`
+  `persist_avp_no`), nested AVP numbers listed from parent to child: its
+  order is kept and compared.
 * **Write-only secrets** (`lbmonitor` `password`/`secondarypassword`/`radkey`,
   `sslcertkey` `passplain`) are sent but never compared, because NITRO does not
   return them.

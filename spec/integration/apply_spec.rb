@@ -331,6 +331,18 @@ describe 'applying netscaler resources', type: :integration do
       end
     end
 
+    # persistavpno lists nested AVP numbers from parent to child
+    { nitro_lbvserver: :persistavpno, netscaler_lbvserver: :persist_avp_no }.each do |type, attr|
+      it "keeps the order of the ordered lists of #{type}" do
+        stub_lookup('lbvserver', 'vs_dia')
+          .to_return(json('lbvserver' => [{ 'name' => 'vs_dia', 'servicetype' => 'DIAMETER', 'persistavpno' => %w[5 300] }]))
+        update = stub_request(:put, "#{base}/lbvserver/vs_dia")
+                 .with(body: { 'lbvserver' => { 'name' => 'vs_dia', 'persistavpno' => [300, 5] } }).to_return(json({}))
+        expect(apply(type, 'vs_dia', attr => [300, 5])).to be_changed
+        expect(update).to have_been_requested
+      end
+    end
+
     it 'does not rewrite a MYSQL-ECV monitor password on every run' do
       params = { type: 'MYSQL-ECV', user_name: 'monitor', password: 'pw', database: 'app', sql_query: 'select 1', destination_port: '3306' }
       stub_lookup('lbmonitor', 'probe_db')

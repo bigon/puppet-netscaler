@@ -1670,6 +1670,7 @@ module PuppetX
           "update" => true,
           "disable_param" => false,
           "items" => "integer",
+          "ordered" => true,
         }.freeze,
         "persistencebackup" => {
           "api" => "persistencebackup",

@@ -25,6 +25,8 @@
 #                   next to the namevars; changing a binding binds it again
 #                   with its current attributes except these.
 #   init_only:      extra attributes that cannot be changed after creation.
+#   ordered:        lists whose order matters to NITRO; the others are sets,
+#                   compared and sent sorted.
 #   sensitive:      secrets: the type also accepts Sensitive values, and the
 #                   value read back is wrapped in Sensitive, so it is
 #                   redacted in logs and reports.
@@ -48,6 +50,8 @@ servicegroup_servicegroupmember_binding:
   rebind_exclude: [ip]
   autorequire: {servicegroupname: [servicegroup], servername: [server]}
 lbvserver:
+  # Nested AVP numbers, from parent to child
+  ordered: [persistavpno]
   autorequire: {backupvserver: [lbvserver]}
 lbvserver_service_binding:
   namevars: [name, servicename]
