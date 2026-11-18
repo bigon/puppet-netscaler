@@ -77,6 +77,14 @@ describe NitroGenerator do
     end
   end
 
+  describe '.puppet_type' do
+    it 'bounds integers by their minimum and maximum, either alone' do
+      expect(described_class.puppet_type('type' => 'integer', 'minimum' => 1, 'maximum' => 9)).to eq('Optional[Integer[1, 9]]')
+      expect(described_class.puppet_type('type' => 'integer', 'minimum' => 1)).to eq('Optional[Integer[1]]')
+      expect(described_class.puppet_type('type' => 'integer', 'maximum' => 9)).to eq('Optional[Integer[default, 9]]')
+    end
+  end
+
   describe '.parse_yaml' do
     it 'keeps YES/NO as strings' do
       expect(described_class.parse_yaml("a:\n  enum:\n    - YES\n    - NO\n  default: ON\n")).to eq('a' => { 'enum' => %w[YES NO], 'default' => 'ON' })

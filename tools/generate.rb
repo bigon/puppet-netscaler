@@ -99,8 +99,8 @@ module NitroGenerator
   end
 
   def integer_type(schema)
-    if schema['minimum'] && schema['maximum']
-      "Integer[#{schema['minimum'].to_i}, #{schema['maximum'].to_i}]"
+    if schema['maximum']
+      "Integer[#{schema['minimum'] ? schema['minimum'].to_i : 'default'}, #{schema['maximum'].to_i}]"
     elsif schema['minimum']
       "Integer[#{schema['minimum'].to_i}]"
     else
