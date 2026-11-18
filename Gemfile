@@ -3,7 +3,6 @@
 source ENV['GEM_SOURCE'] || 'https://rubygems.org'
 
 group :test do
-  gem 'puppet-resource_api', '~> 2.0', require: false
   gem 'voxpupuli-test', '~> 15.0', require: false
   gem 'puppet_metadata', '~> 6.4', require: false
   gem 'webmock', '~> 3.0', require: false
