@@ -49,6 +49,11 @@ describe PuppetX::Netscaler::NitroResource do
       expect(rec).to include('interval' => 5, 'respcode' => ['200'], 'lrtm' => 'ENABLED', 'Snmpoid' => '1.3')
     end
 
+    it 'coerces the elements of integer lists' do
+      expect(res('lbmonitor').normalize('monitorname' => 'm', 'acctapplicationid' => %w[3 10], 'grpcstatuscode' => '0'))
+        .to include('acctapplicationid' => [3, 10], 'grpcstatuscode' => [0])
+    end
+
     it 'coerces booleans' do
       expect(res('server').normalize('name' => 's', 'domainresolvenow' => 'true')).to include('domainresolvenow' => true)
     end
@@ -73,6 +78,18 @@ describe PuppetX::Netscaler::NitroResource do
 
     it 'keeps the configured state when reported' do
       expect(res('server').normalize('name' => 's', 'state' => 'DISABLED', 'svrstate' => 'UP')).to include('state' => 'DISABLED')
+    end
+  end
+
+  describe '.canonical_list' do
+    let(:list) { { 'kind' => 'array' } }
+
+    it 'sorts numbers by value, before anything else sorted as text' do
+      expect(described_class.canonical_list(list, [10, 'b', 9.5, 'a', 3])).to eq([3, 9.5, 10, 'a', 'b'])
+    end
+
+    it 'leaves other values alone' do
+      expect(described_class.canonical_list({ 'kind' => 'string' }, 'b')).to eq('b')
     end
   end
 

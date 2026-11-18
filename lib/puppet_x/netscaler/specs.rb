@@ -1669,6 +1669,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "items" => "integer",
         }.freeze,
         "persistencebackup" => {
           "api" => "persistencebackup",
@@ -2211,6 +2212,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "items" => "integer",
         }.freeze,
         "action" => {
           "api" => "action",
@@ -2251,6 +2253,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "items" => "integer",
         }.freeze,
         "basedn" => {
           "api" => "basedn",
@@ -2411,6 +2414,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "items" => "integer",
         }.freeze,
         "hostipaddress" => {
           "api" => "hostipaddress",
@@ -2912,6 +2916,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "items" => "integer",
         }.freeze,
         "tos" => {
           "api" => "tos",
@@ -3024,6 +3029,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "items" => "integer",
         }.freeze,
         "vendorspecificauthapplicationids" => {
           "api" => "vendorspecificauthapplicationids",
@@ -3032,6 +3038,7 @@ module PuppetX
           "create" => true,
           "update" => true,
           "disable_param" => false,
+          "items" => "integer",
         }.freeze,
         "vendorspecificvendorid" => {
           "api" => "vendorspecificvendorid",

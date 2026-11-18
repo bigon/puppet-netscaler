@@ -46,6 +46,17 @@ components:
         monitor_name_svc: &monitor_name_svc
           description: Fixture update-only value that GET never returns.
           type: string
+        idlist: &idlist
+          description: Fixture list of integers, untyped items as in NITRO.
+          items: {}
+          maximum: 4294967295
+          minimum: 1
+          type: array
+        namelist: &namelist
+          description: Fixture list of strings.
+          items:
+            type: string
+          type: array
     disable_operation:
       properties:
         name: *name
@@ -57,6 +68,8 @@ components:
         servername: *servername
         ip: *ip
         monitor_name_svc: *monitor_name_svc
+        idlist: *idlist
+        namelist: *namelist
         state: *state
 info:
   title: Test fixture for service

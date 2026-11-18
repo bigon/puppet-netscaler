@@ -27,7 +27,7 @@ The title is the NITRO `monitorname`.
       behaviour: :namevar,
     },
     acctapplicationid: {
-      type: "Optional[Array[String]]",
+      type: "Optional[Array[Integer[0, 4294967295]]]",
       desc: "List of Acct-Application-Id attribute value pairs (AVPs) for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers. A maximum of eight of these AVPs are supported in a monitoring message.",
     },
     action: {
@@ -47,7 +47,7 @@ The title is the NITRO `monitorname`.
       desc: "Attribute to evaluate when the LDAP server responds to the query. Success or failure of the monitoring probe depends on whether the attribute exists in the response. Optional.",
     },
     authapplicationid: {
-      type: "Optional[Array[String]]",
+      type: "Optional[Array[Integer[0, 4294967295]]]",
       desc: "List of Auth-Application-Id attribute value pairs (AVPs) for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers. A maximum of eight of these AVPs are supported in a monitoring CER message.",
     },
     basedn: {
@@ -127,7 +127,7 @@ The title is the NITRO `monitorname`.
       desc: "Option to specify gRPC service name on which gRPC health check need to be performed",
     },
     grpcstatuscode: {
-      type: "Optional[Array[String]]",
+      type: "Optional[Array[Integer]]",
       desc: "gRPC status codes for which to mark the service as UP. The default value is 12(health check unimplemented). If the gRPC status code 0 is received from the backend this configuration is ignored.",
     },
     hostipaddress: {
@@ -400,7 +400,7 @@ The title is the NITRO `monitorname`.
       desc: "Number of consecutive successful probes required to transition a service's state from DOWN to UP.",
     },
     supportedvendorids: {
-      type: "Optional[Array[String]]",
+      type: "Optional[Array[Integer[1, 4294967295]]]",
       desc: "List of Supported-Vendor-Id attribute value pairs (AVPs) for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers. A maximum eight of these AVPs are supported in a monitoring message.",
     },
     tos: {
@@ -457,11 +457,11 @@ The title is the NITRO `monitorname`.
       desc: "Vendor-Id value for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers.",
     },
     vendorspecificacctapplicationids: {
-      type: "Optional[Array[String]]",
+      type: "Optional[Array[Integer[0, 4294967295]]]",
       desc: "List of Vendor-Specific-Acct-Application-Id attribute value pairs (AVPs) to use for monitoring Diameter servers. A maximum of eight of these AVPs are supported in a monitoring message. The specified value is combined with the value of vendorSpecificVendorId to obtain the Vendor-Specific-Application-Id AVP in the CER monitoring message.",
     },
     vendorspecificauthapplicationids: {
-      type: "Optional[Array[String]]",
+      type: "Optional[Array[Integer[0, 4294967295]]]",
       desc: "List of Vendor-Specific-Auth-Application-Id attribute value pairs (AVPs) for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers. A maximum of eight of these AVPs are supported in a monitoring message. The specified value is combined with the value of vendorSpecificVendorId to obtain the Vendor-Specific-Application-Id AVP in the CER monitoring message.",
     },
     vendorspecificvendorid: {

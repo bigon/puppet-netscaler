@@ -49,7 +49,7 @@ Requests flow: Resource API type → provider → `PuppetX::Netscaler::NitroReso
 - **Resource API get cache:** Resource API >= 2.0 caches `get` results on the type class for the whole process (shared across the devices of one `puppet device` run, never invalidated by our writes). Every generated type opts out (`render_get_cache` in `tools/generate.rb`, also used by `generate_compat.rb`), so the transport snapshot is the only cache, as on Resource API 1.9 (OpenVox 8).
 - **Providers:**
   - `NitroProvider` (`nitro_provider.rb`) is the base of all generated `nitro_*` providers. It maps Puppet attribute names to NITRO names; the namevar of entities is `name` in Puppet.
-  - Its `canonicalize` sorts NITRO lists (they are unordered sets) and adds the composite `:title` of bindings, which Resource API strict mode requires.
+  - Its `canonicalize` sorts NITRO lists (they are unordered sets) through `NitroResource.canonical_list`, shared with the engine and the compat layer, and adds the composite `:title` of bindings, which Resource API strict mode requires.
   - `ConfigSaver` saves the running config once per run at exit when something changed and `save_config` is on.
   - `CompatProvider` (`compat_provider.rb`) translates the old attribute names and values through `COMPAT` (`compat_definitions.rb`) and delegates to the engine. Subclasses handle special cases: `netscaler_server` `address` (IP vs domain), `netscaler_csvserver` `default_lbvserver` (a `csvserver_lbvserver_binding`).
 - **Generator** (`tools/generate.rb`, configured by `tools/resources.yaml`):

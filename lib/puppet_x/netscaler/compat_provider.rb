@@ -61,18 +61,21 @@ module PuppetX
       # Options of the disable action (delay, graceful) are parameters for
       # another reason and are not write-only.
       def write_only?(compat, attr)
-        return false if attr[:api].nil?
-
-        native = SPECS.fetch(compat[:nitro])['attributes'].values.find { |n| n['api'] == attr[:api] }
+        native = native(compat, attr)
         !native.nil? && native['behaviour'] == 'parameter' && !native['disable_param']
       end
 
       # Secrets, as declared on the backing nitro_* attribute
       def sensitive?(compat, attr)
-        return false if attr[:api].nil?
-
-        native = SPECS.fetch(compat[:nitro])['attributes'].values.find { |n| n['api'] == attr[:api] }
+        native = native(compat, attr)
         !native.nil? && native['sensitive'] == true
+      end
+
+      # The backing nitro_* attribute
+      def native(compat, attr)
+        return nil if attr[:api].nil?
+
+        SPECS.fetch(compat[:nitro])['attributes'].values.find { |n| n['api'] == attr[:api] }
       end
 
       def puppet_type(attr)
@@ -86,9 +89,15 @@ module PuppetX
         end
       end
 
-      # NITRO lists are unordered sets of strings: compare them sorted
-      def list(value)
-        Array(value).map(&:to_s).sort
+      # A NITRO list in the canonical form of the backing nitro_* attribute.
+      # puppetlabs-netscaler also took a single value, and numbers as
+      # strings in lists of integers.
+      def list(compat, attr, value)
+        native = native(compat, attr) || { 'kind' => 'array' }
+        items = Array(value).map do |v|
+          (native['items'] == 'integer' && v.to_s.match?(%r{\A\d+\z})) ? Integer(v.to_s, 10) : v.to_s
+        end
+        NitroResource.canonical_list(native, items)
       end
 
       # Map any truthy spelling onto the value pair NITRO expects
@@ -134,7 +143,7 @@ module PuppetX
                       when :truthy then Compat.truthy(a, r[name])
                       when :upcase then r[name].to_s.upcase
                       when :integer then (r[name].is_a?(String) && r[name].match?(%r{\A\d+\z})) ? Integer(r[name], 10) : r[name]
-                      when :array then Compat.list(r[name])
+                      when :array then Compat.list(compat, a, r[name])
                       else NitroProvider.conceal(Compat.sensitive?(compat, a), r[name])
                       end
           end
@@ -202,7 +211,7 @@ module PuppetX
         compat[:attributes].each do |name, a|
           next if Compat.parameter?(compat, a) || rec[a[:api]].nil?
 
-          value = (a[:kind] == :array) ? Compat.list(rec[a[:api]]) : rec[a[:api]]
+          value = (a[:kind] == :array) ? Compat.list(compat, a, rec[a[:api]]) : rec[a[:api]]
           result[name] = NitroProvider.conceal(Compat.sensitive?(compat, a), value)
         end
         result

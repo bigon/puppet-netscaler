@@ -272,7 +272,7 @@ The title is the NITRO `name`.
       desc: "This option is used to to specify the threshold of minimum number of services to be UP in an order, for it to be considered in Lb decision.",
     },
     persistavpno: {
-      type: "Optional[Array[String]]",
+      type: "Optional[Array[Integer[1]]]",
       desc: "Persist AVP number for Diameter Persistency.\n            In case this AVP is not defined in Base RFC 3588 and it is nested inside a Grouped AVP,\n            define a sequence of AVP numbers (max 3) in order of parent to child. So say persist AVP number X\n            is nested inside AVP Y which is nested in Z, then define the list as  Z Y X",
     },
     persistencebackup: {

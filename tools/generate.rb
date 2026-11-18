@@ -87,21 +87,39 @@ module NitroGenerator
     end
   end
 
+  # Kind of the elements of an array attribute. Among the attributes that
+  # can be set, NITRO lists of integers (Integer[] in the REST reference) are
+  # the only ones whose OAS items carry no type, e.g. lbmonitor
+  # acctapplicationid: `items: {}`. (Read-only lists such as Double[] ones
+  # share that form, but are never generated.)
+  def item_kind(schema)
+    return nil unless schema['type'] == 'array'
+
+    (schema['items'].is_a?(Hash) && schema['items']['type'].nil?) ? 'integer' : 'string'
+  end
+
+  def integer_type(schema)
+    if schema['minimum'] && schema['maximum']
+      "Integer[#{schema['minimum'].to_i}, #{schema['maximum'].to_i}]"
+    elsif schema['minimum']
+      "Integer[#{schema['minimum'].to_i}]"
+    else
+      'Integer'
+    end
+  end
+
   def puppet_type(schema)
     enum = schema['enum'] || schema.dig('items', 'enum')
     base = case schema['type']
-           when 'integer'
-             if schema['minimum'] && schema['maximum']
-               "Integer[#{schema['minimum'].to_i}, #{schema['maximum'].to_i}]"
-             elsif schema['minimum']
-               "Integer[#{schema['minimum'].to_i}]"
-             else
-               'Integer'
-             end
+           when 'integer' then integer_type(schema)
            when 'number' then 'Numeric'
            when 'boolean' then 'Boolean'
            when 'array'
-             item = enum ? "Enum[#{enum.map { |e| quote(e) }.join(', ')}]" : 'String'
+             # The bounds of an integer list apply to its elements
+             item = if enum then "Enum[#{enum.map { |e| quote(e) }.join(', ')}]"
+                    elsif item_kind(schema) == 'integer' then integer_type(schema)
+                    else 'String'
+                    end
              "Array[#{item}]"
            else
              enum ? "Enum[#{enum.map { |e| quote(e) }.join(', ')}]" : 'String'
@@ -190,6 +208,7 @@ module NitroGenerator
         'update' => update,
         'disable_param' => state_actions && dis.key?(api) && api != key,
       }
+      attributes[pname]['items'] = 'integer' if item_kind(schema) == 'integer'
       attributes[pname]['sensitive'] = true if sensitive.include?(api)
     end
     namevars.each do |nv|
@@ -374,7 +393,7 @@ module NitroGenerator
 
   # What a NITRO change can affect, per resource and per attribute
   SPEC_FIELDS = %w[kind key namevars create_required update_required delete_args rebind_exclude update_with state_actions action_updates title_format autorequire].freeze
-  ATTRIBUTE_FIELDS = %w[api kind type behaviour create update disable_param].freeze
+  ATTRIBUTE_FIELDS = %w[api kind items type behaviour create update disable_param].freeze
 
   def build_all(oas_dir, rest_dir, config_file)
     config = YAML.safe_load_file(config_file) || {}

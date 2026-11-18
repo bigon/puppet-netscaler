@@ -3464,7 +3464,7 @@ The following properties are available in the `nitro_lbmonitor` type.
 
 ##### `acctapplicationid`
 
-Data type: `Optional[Array[String]]`
+Data type: `Optional[Array[Integer[0, 4294967295]]]`
 
 List of Acct-Application-Id attribute value pairs (AVPs) for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers. A maximum of eight of these AVPs are supported in a monitoring message.
 
@@ -3494,7 +3494,7 @@ Attribute to evaluate when the LDAP server responds to the query. Success or fai
 
 ##### `authapplicationid`
 
-Data type: `Optional[Array[String]]`
+Data type: `Optional[Array[Integer[0, 4294967295]]]`
 
 List of Auth-Application-Id attribute value pairs (AVPs) for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers. A maximum of eight of these AVPs are supported in a monitoring CER message.
 
@@ -3622,7 +3622,7 @@ Option to specify gRPC service name on which gRPC health check need to be perfor
 
 ##### `grpcstatuscode`
 
-Data type: `Optional[Array[String]]`
+Data type: `Optional[Array[Integer]]`
 
 gRPC status codes for which to mark the service as UP. The default value is 12(health check unimplemented). If the gRPC status code 0 is received from the backend this configuration is ignored.
 
@@ -3994,7 +3994,7 @@ Number of consecutive successful probes required to transition a service's state
 
 ##### `supportedvendorids`
 
-Data type: `Optional[Array[String]]`
+Data type: `Optional[Array[Integer[1, 4294967295]]]`
 
 List of Supported-Vendor-Id attribute value pairs (AVPs) for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers. A maximum eight of these AVPs are supported in a monitoring message.
 
@@ -4078,13 +4078,13 @@ Vendor-Id value for the Capabilities-Exchange-Request (CER) message to use for m
 
 ##### `vendorspecificacctapplicationids`
 
-Data type: `Optional[Array[String]]`
+Data type: `Optional[Array[Integer[0, 4294967295]]]`
 
 List of Vendor-Specific-Acct-Application-Id attribute value pairs (AVPs) to use for monitoring Diameter servers. A maximum of eight of these AVPs are supported in a monitoring message. The specified value is combined with the value of vendorSpecificVendorId to obtain the Vendor-Specific-Application-Id AVP in the CER monitoring message.
 
 ##### `vendorspecificauthapplicationids`
 
-Data type: `Optional[Array[String]]`
+Data type: `Optional[Array[Integer[0, 4294967295]]]`
 
 List of Vendor-Specific-Auth-Application-Id attribute value pairs (AVPs) for the Capabilities-Exchange-Request (CER) message to use for monitoring Diameter servers. A maximum of eight of these AVPs are supported in a monitoring message. The specified value is combined with the value of vendorSpecificVendorId to obtain the Vendor-Specific-Application-Id AVP in the CER monitoring message.
 
@@ -4531,7 +4531,7 @@ This option is used to to specify the threshold of minimum number of services to
 
 ##### `persistavpno`
 
-Data type: `Optional[Array[String]]`
+Data type: `Optional[Array[Integer[1]]]`
 
 Persist AVP number for Diameter Persistency.\n            In case this AVP is not defined in Base RFC 3588 and it is nested inside a Grouped AVP,\n            define a sequence of AVP numbers (max 3) in order of parent to child. So say persist AVP number X\n            is nested inside AVP Y which is nested in Z, then define the list as  Z Y X
 

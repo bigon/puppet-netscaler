@@ -20,6 +20,14 @@ module PuppetX
 
       attr_reader :spec
 
+      # NITRO lists are sets, compared and sent sorted: numbers by value,
+      # anything else as text
+      def self.canonical_list(attr, value)
+        return value unless attr['kind'] == 'array' && value.is_a?(Array)
+
+        value.sort_by { |v| v.is_a?(Numeric) ? [0, v, ''] : [1, 0, v.to_s] }
+      end
+
       def self.for(resource)
         @cache ||= {}
         @cache[resource] ||= new(SPECS.fetch(resource))
@@ -197,7 +205,7 @@ module PuppetX
           a = attribute(k)
           next if a.nil? || v.nil?
 
-          h[k] = coerce(a['kind'], v)
+          h[k] = coerce(a['kind'], v, a['items'])
         end
         # Some entities (service, lbvserver, ...) only report their runtime
         # state, from which the configured one is derived.
@@ -267,7 +275,9 @@ module PuppetX
         current == desired
       end
 
-      def coerce(kind, value)
+      # NITRO returns numbers and booleans as strings, also inside lists
+      # (acctapplicationid => ["3", "1"])
+      def coerce(kind, value, items = nil)
         case kind
         when 'integer'
           (value.is_a?(String) && value.match?(%r{\A-?\d+\z})) ? Integer(value, 10) : value
@@ -280,7 +290,8 @@ module PuppetX
           else value
           end
         when 'array'
-          value.is_a?(Array) ? value : [value]
+          list = value.is_a?(Array) ? value : [value]
+          items ? list.map { |v| coerce(items, v) } : list
         else
           value.is_a?(String) ? value : value.to_s
         end

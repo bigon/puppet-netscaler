@@ -310,6 +310,27 @@ describe 'applying netscaler resources', type: :integration do
       no_writes
     end
 
+    # NITRO returns lists of integers as strings
+    { nitro_lbmonitor: :acctapplicationid, netscaler_lbmonitor: :account_application_ids }.each do |type, attr|
+      it "compares the integer lists of #{type} with what NITRO returns" do
+        stub_lookup('lbmonitor', 'probe_dia')
+          .to_return(json('lbmonitor' => [{ 'monitorname' => 'probe_dia', 'type' => 'DIAMETER', 'acctapplicationid' => %w[3 10] }]))
+        expect(apply(type, 'probe_dia', type: 'DIAMETER', attr => [10, 3])).not_to be_changed
+        no_writes
+      end
+    end
+
+    { nitro_lbmonitor: { acctapplicationid: [10, 3] }, netscaler_lbmonitor: { account_application_ids: %w[10 3] } }.each do |type, list|
+      it "sends the integer lists of #{type} as numbers" do
+        stub_lookup('lbmonitor', 'probe_dia')
+          .to_return(json('lbmonitor' => [{ 'monitorname' => 'probe_dia', 'type' => 'DIAMETER', 'acctapplicationid' => %w[3] }]))
+        update = stub_request(:put, "#{base}/lbmonitor/probe_dia")
+                 .with(body: { 'lbmonitor' => { 'monitorname' => 'probe_dia', 'type' => 'DIAMETER', 'acctapplicationid' => [3, 10] } }).to_return(json({}))
+        expect(apply(type, 'probe_dia', type: 'DIAMETER', **list)).to be_changed
+        expect(update).to have_been_requested
+      end
+    end
+
     it 'does not rewrite a MYSQL-ECV monitor password on every run' do
       params = { type: 'MYSQL-ECV', user_name: 'monitor', password: 'pw', database: 'app', sql_query: 'select 1', destination_port: '3306' }
       stub_lookup('lbmonitor', 'probe_db')

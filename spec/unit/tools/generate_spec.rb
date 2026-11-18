@@ -54,6 +54,19 @@ describe NitroGenerator do
     end
   end
 
+  describe 'list attributes' do
+    subject(:spec) { spec_for('service') }
+
+    it 'types untyped items as bounded integers' do
+      expect(spec['attributes']['idlist']).to include('kind' => 'array', 'items' => 'integer', 'type' => 'Optional[Array[Integer[1, 4294967295]]]')
+    end
+
+    it 'keeps typed items as strings' do
+      expect(spec['attributes']['namelist']).to include('kind' => 'array', 'type' => 'Optional[Array[String]]')
+      expect(spec['attributes']['namelist']).not_to have_key('items')
+    end
+  end
+
   describe '.parse_yaml' do
     it 'keeps YES/NO as strings' do
       expect(described_class.parse_yaml("a:\n  enum:\n    - YES\n    - NO\n  default: ON\n")).to eq('a' => { 'enum' => %w[YES NO], 'default' => 'ON' })

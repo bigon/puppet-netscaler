@@ -106,7 +106,7 @@ module PuppetX
           value = value.to_s if a['behaviour'] == 'namevar'
           next unless valid?(context, name, value)
 
-          result[name.to_sym] = conceal(a, sort_list(a, value))
+          result[name.to_sym] = conceal(a, NitroResource.canonical_list(a, value))
         end
         add_title(result)
       end
@@ -128,14 +128,10 @@ module PuppetX
         for_flush = flush_target_state?
         resources.each do |r|
           attributes.each do |name, a|
-            r[name.to_sym] = conceal(a, sort_list(a, r[name.to_sym])) if r.key?(name.to_sym)
+            r[name.to_sym] = conceal(a, NitroResource.canonical_list(a, r[name.to_sym])) if r.key?(name.to_sym)
           end
           add_title(r) unless for_flush
         end
-      end
-
-      def sort_list(attr, value)
-        (attr['kind'] == 'array' && value.is_a?(Array)) ? value.sort_by(&:to_s) : value
       end
 
       # Secrets stay wrapped on both sides, the desired value (also when the
