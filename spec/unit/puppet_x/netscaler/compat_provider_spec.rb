@@ -3,7 +3,7 @@
 require 'spec_helper'
 require 'puppet/transport/netscaler'
 %w[netscaler_server netscaler_lbvserver netscaler_lbmonitor netscaler_servicegroup_member netscaler_csvserver netscaler_cspolicy
-   netscaler_lbvserver_service_binding netscaler_sslvserver].each do |t|
+   netscaler_lbvserver_service_binding netscaler_sslvserver netscaler_service].each do |t|
   require "puppet/type/#{t}"
   require "puppet/provider/#{t}/#{t}"
 end
@@ -242,6 +242,23 @@ describe PuppetX::Netscaler::CompatProvider do
     it 'sends truthy spellings as NITRO booleans' do
       expect(client).to receive(:put).with('sslvserver_sslcertkey_binding', { 'vservername' => 'vs1', 'certkeyname' => 'ck1', 'ca' => true })
       provider.set(context, change(nil, provider.canonicalize(context, [{ ensure: 'present', name: 'vs1/ck1', ca: 'yes' }]).first))
+    end
+  end
+
+  describe 'netscaler_service' do
+    let(:type_name) { :netscaler_service }
+    let(:provider_class) { Puppet::Provider::NetscalerService::NetscalerService }
+
+    it 'keeps the mixed-case spelling of a NITRO enum' do
+      allow(client).to receive(:get).with('service', 's1').and_return('service' => [{ 'name' => 's1', 'servicetype' => 'RADIUSListener' }])
+      found = provider.get(context, ['s1'])
+      expect(found.first[:protocol]).to eq('RADIUSListener')
+      expect(provider.canonicalize(context, found.map(&:dup))).to eq(found)
+    end
+
+    it 'sends any case of an enum value in the NITRO spelling' do
+      expect(client).to receive(:post).with('service', { 'name' => 's1', 'servicetype' => 'RADIUSListener', 'port' => 1812 })
+      provider.set(context, change(nil, provider.canonicalize(context, [{ ensure: 'present', name: 's1', protocol: 'radiuslistener', port: 1812 }]).first))
     end
   end
 end

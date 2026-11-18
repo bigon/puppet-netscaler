@@ -144,6 +144,11 @@ describe 'netscaler types' do
       expect([r[:port], r[:service_type], r[:lb_method]]).to eq([8080, 'HTTP', 'ROUNDROBIN'])
     end
 
+    it 'spells enums as NITRO does, whatever the case given' do
+      expect(Puppet::Type.type(:netscaler_service).new(title: 's', protocol: 'radiuslistener')[:protocol]).to eq('RADIUSListener')
+      expect(Puppet::Type.type(:netscaler_servicegroup).new(title: 'sg', protocol: 'RADIUSLISTENER')[:protocol]).to eq('RADIUSListener')
+    end
+
     it 'never compares secrets NITRO does not return' do
       definition = Puppet::Type.type(:netscaler_lbmonitor).type_definition
       %i[password secondary_password radius_key].each do |attr|

@@ -100,6 +100,40 @@ module PuppetX
         NitroResource.canonical_list(native, items)
       end
 
+      # NITRO's spelling of an enum value. puppetlabs-netscaler accepted any
+      # case, but NITRO enums are not all upper case (RADIUSListener), so the
+      # value is matched case-insensitively against the enum of the backing
+      # nitro_* attribute. Values outside the enum are upcased, as before.
+      def enum(compat, attr, value)
+        value = value.to_s
+        enum_values(compat, attr)&.find { |v| v.casecmp?(value) } || value.upcase
+      end
+
+      # The values of the backing nitro_* attribute's Enum type, nil if it
+      # is not an enum
+      def enum_values(compat, attr)
+        @enum_values ||= {}
+        cache_key = [compat[:nitro], attr[:api]]
+        return @enum_values[cache_key] if @enum_values.key?(cache_key)
+
+        @enum_values[cache_key] = parse_enum(compat, attr)
+      end
+
+      def parse_enum(compat, attr)
+        name, = SPECS.fetch(compat[:nitro])['attributes'].find { |_n, a| a['api'] == attr[:api] }
+        return nil if name.nil?
+
+        nitro_type = Puppet::Type.type(:"nitro_#{compat[:nitro]}")
+        return nil if nitro_type.nil?
+
+        type = nitro_type.type_definition.attributes.dig(name.to_sym, :type)
+        return nil if type.nil?
+
+        parsed = Puppet::Pops::Types::TypeParser.singleton.parse(type)
+        parsed = parsed.optional_type if parsed.is_a?(Puppet::Pops::Types::POptionalType)
+        parsed.is_a?(Puppet::Pops::Types::PEnumType) ? parsed.values.freeze : nil
+      end
+
       # Map any truthy spelling onto the value pair NITRO expects
       def truthy(attr, value)
         return value if value.nil?
@@ -145,7 +179,7 @@ module PuppetX
 
             r[name] = case a[:kind]
                       when :truthy then Compat.truthy(a, r[name])
-                      when :upcase then r[name].to_s.upcase
+                      when :upcase then Compat.enum(compat, a, r[name])
                       when :integer then (r[name].is_a?(String) && r[name].match?(%r{\A\d+\z})) ? Integer(r[name], 10) : r[name]
                       when :array then Compat.list(compat, a, r[name])
                       else NitroProvider.conceal(Compat.sensitive?(compat, a), r[name])
