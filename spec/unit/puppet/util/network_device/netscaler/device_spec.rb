@@ -12,6 +12,14 @@ describe Puppet::Util::NetworkDevice::Netscaler::Device do
       )
     end
 
+    it 'keeps a literal + in the user and password' do
+      expect(described_class.legacy_url_to_config('https://ns+root:p+ss@ns/nitro/v1/')).to include(user: 'ns+root', password: 'p+ss')
+    end
+
+    it 'percent-decodes the user and password' do
+      expect(described_class.legacy_url_to_config('https://ns%2Broot:p%2Bs%3As%40@ns/nitro/v1/')).to include(user: 'ns+root', password: 'p+s:s@')
+    end
+
     it 'handles http, custom ports and options' do
       expect(described_class.legacy_url_to_config('http://admin:pw@ns:8080/nitro/v1?ssl_verify=false&save_config=no')).to eq(
         host: 'ns', port: 8080, ssl: false, user: 'admin', password: 'pw', ssl_verify: false, save_config: false,

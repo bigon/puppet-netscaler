@@ -26,13 +26,20 @@ module Puppet::Util::NetworkDevice::Netscaler
         host: uri.host,
         port: uri.port,
         ssl: uri.scheme.casecmp('https').zero?,
-        user: URI.decode_www_form_component(uri.user.to_s),
-        password: URI.decode_www_form_component(uri.password.to_s),
+        user: decode_userinfo(uri.user),
+        password: decode_userinfo(uri.password),
       }
       %w[ssl_verify save_config prefetch].each do |option|
         config[option.to_sym] = !%w[false no 0].include?(query[option].to_s.downcase) if query.key?(option)
       end
       config
+    end
+
+    # Percent-decodes the user or password of a URL. Unlike form encoding,
+    # `+` is a literal plus in URI userinfo. Same as URI.decode_uri_component,
+    # which Ruby 3.1 (still allowed by Puppet 8) lacks.
+    def self.decode_userinfo(value)
+      URI.decode_www_form_component(value.to_s.gsub('+', '%2B'))
     end
   end
 end
