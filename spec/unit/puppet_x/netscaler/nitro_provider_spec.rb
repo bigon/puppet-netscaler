@@ -13,16 +13,13 @@ require 'puppet/provider/nitro_sslvserver/nitro_sslvserver'
 describe PuppetX::Netscaler::NitroProvider do
   let(:base) { 'https://ns/nitro/v1/config' }
   let(:transport) { Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p', save_config: false, prefetch: false) }
+  let(:prefetching) { Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p', save_config: false) }
   let(:type) { Puppet::Type.type(type_name) }
   let(:context) { Puppet::ResourceApi::PuppetContext.new(type.type_definition.definition) }
   let(:provider) { provider_class.new }
 
   before do
     allow(context).to receive(:transport).and_return(transport)
-  end
-
-  def json(body, status = 200)
-    { status: status, body: JSON.generate(body) }
   end
 
   context 'with nitro_server' do
@@ -37,7 +34,6 @@ describe PuppetX::Netscaler::NitroProvider do
     end
 
     it 'lists every resource when asked for an empty list of names' do
-      prefetching = Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p', save_config: false)
       allow(context).to receive(:transport).and_return(prefetching)
       stub_request(:get, "#{base}/server").to_return(json('server' => [{ 'name' => 'web1' }, { 'name' => 'web2' }]))
       expect(provider.get(context, [])).to eq([{ ensure: 'present', name: 'web1' }, { ensure: 'present', name: 'web2' }])
@@ -55,13 +51,34 @@ describe PuppetX::Netscaler::NitroProvider do
     end
 
     it 'answers lookups from one listing per type with prefetch' do
-      prefetching = Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p', save_config: false)
       allow(context).to receive(:transport).and_return(prefetching)
       all = stub_request(:get, "#{base}/server").to_return(json('server' => [{ 'name' => 'web1' }, { 'name' => 'web2' }]))
       expect(provider.get(context, ['web1'])).to eq([{ ensure: 'present', name: 'web1' }])
       expect(provider.get(context, ['web2'])).to eq([{ ensure: 'present', name: 'web2' }])
       expect(provider.get(context, ['missing'])).to eq([])
       expect(all).to have_been_requested.once
+    end
+
+    it 'fetches objects one by one when NITRO refuses the listing' do
+      allow(context).to receive(:transport).and_return(prefetching)
+      stub_request(:get, "#{base}/server").to_return(json({ 'errorcode' => 1145, 'message' => 'Not authorized', 'severity' => 'ERROR' }, 403))
+      one = stub_request(:get, "#{base}/server/web1").to_return(json('server' => [{ 'name' => 'web1' }]))
+      expect(provider.get(context, ['web1'])).to eq([{ ensure: 'present', name: 'web1' }])
+      expect(one).to have_been_requested
+    end
+
+    it 'fetches objects one by one when a proxy fails the listing' do
+      allow(context).to receive(:transport).and_return(prefetching)
+      stub_request(:get, "#{base}/server").to_return(status: 504, body: '<html>Gateway Timeout</html>')
+      one = stub_request(:get, "#{base}/server/web1").to_return(json('server' => [{ 'name' => 'web1' }]))
+      expect(provider.get(context, ['web1'])).to eq([{ ensure: 'present', name: 'web1' }])
+      expect(one).to have_been_requested
+    end
+
+    it 'raises when the appliance redirects' do
+      allow(context).to receive(:transport).and_return(prefetching)
+      stub_request(:get, %r{\A#{Regexp.escape(base)}/server}).to_return(status: 302, headers: { 'Location' => 'https://ns/' })
+      expect { provider.get(context, ['web1']) }.to raise_error(Puppet::Transport::Netscaler::Error, %r{redirected \(HTTP 302\)})
     end
 
     it 'drops values that do not match the declared type' do

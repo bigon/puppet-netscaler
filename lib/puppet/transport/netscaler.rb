@@ -11,6 +11,7 @@ module Puppet::Transport
   class Netscaler
     # Raised for any NITRO error response
     class Error < StandardError
+      # errorcode is nil when the answer did not come from NITRO
       attr_reader :status, :errorcode
 
       def initialize(message, status: nil, errorcode: nil)
@@ -97,11 +98,11 @@ module Puppet::Transport
     end
 
     # GET /nitro/v1/config/<resource>[/<key>]. Returns the parsed body or nil
-    # when the entity does not exist.
+    # when NITRO says the entity does not exist.
     def get(resource, key = nil, query = {})
       request(:get, path(resource, key), query: query)
     rescue Error => e
-      return nil if e.status == 404 || NOT_FOUND_CODES.include?(e.errorcode)
+      return nil if e.errorcode && (e.status == 404 || NOT_FOUND_CODES.include?(e.errorcode))
 
       raise
     end
@@ -240,24 +241,69 @@ module Puppet::Transport
       handle(http.request(req), method, uri)
     end
 
+    # NITRO answers a JSON object with an errorcode, on errors (4xx/5xx) too,
+    # except for an empty body on a successful write (201 on a create, 200 on
+    # an ?action= POST); it never sends 204. Anything else did not come from
+    # NITRO.
+    #
+    # NITRO itself never redirects; a 3xx comes from in front of it (e.g. HTTP
+    # to HTTPS on a secure-only NSIP). Net::HTTP does not follow redirects, and
+    # we do not either: on 301/302/303 most clients re-send a POST (Go and some
+    # Python clients also a PUT/DELETE) as a GET without the body, which
+    # "succeeds" without changing anything.
     def handle(response, method, uri)
-      data = parse(response.body)
       status = response.code.to_i
+      success = status.between?(200, 299)
+      prefix = "NITRO #{method.upcase} #{uri}"
+      if status.between?(300, 399)
+        # without query and fragment: they may carry an SSO state or session token
+        location = excerpt(response['location'].to_s.sub(%r{[?#].*}m, ''))
+        raise Error.new("#{prefix} was redirected (HTTP #{status}) to #{location || 'an unknown location'}; " \
+                        'redirects are not followed; check the ssl and port connection options ' \
+                        '(the scheme and port of a legacy device URL)', status: status)
+      end
+
+      body = response.body.to_s
+      return {} if success && status != 204 && method != :get && body.strip.empty?
+
+      data = parse(body)
+      if data.nil?
+        shown = excerpt(body) || "empty body (#{response.message.to_s.strip.empty? ? 'no reason given' : response.message.strip})"
+        raise Error.new("#{prefix} returned a response that is not a NITRO JSON object (HTTP #{status}): #{shown}", status: status)
+      end
+
       errorcode = data['errorcode'].to_i
-      if status >= 400 || (errorcode != 0 && data['severity'].to_s.upcase == 'ERROR')
-        msg = data['message'] || response.message
-        raise Error.new("NITRO #{method.upcase} #{uri} failed (HTTP #{status}, errorcode #{errorcode}): #{msg}",
+      if !success || (errorcode != 0 && data['severity'].to_s.upcase == 'ERROR')
+        msg = utf8(data['message'] || response.message)
+        raise Error.new("#{prefix} failed (HTTP #{status}, errorcode #{errorcode}): #{msg}",
                         status: status, errorcode: errorcode)
       end
       data
     end
 
+    # The NITRO JSON object of the body (it always has an errorcode), nil
+    # for anything else
     def parse(body)
-      return {} if body.nil? || body.strip.empty?
-
-      JSON.parse(body)
+      data = JSON.parse(body)
+      (data.is_a?(Hash) && data.key?('errorcode')) ? data : nil
     rescue JSON::ParserError
-      { 'message' => body.strip }
+      nil
+    end
+
+    # At most 200 characters of a body or header, as valid UTF-8; nil when
+    # there is nothing to show
+    def excerpt(value)
+      text = utf8(value.to_s.lstrip.byteslice(0, 1024)).strip
+      return nil if text.empty?
+
+      (text.length > 200) ? "#{text[0, 200]}..." : text
+    end
+
+    # A UTF-8 copy of value, invalid sequences replaced. Net::HTTP tags bodies
+    # and headers binary as soon as they hold a non-ASCII byte, and JSON.parse
+    # keeps invalid bytes in the strings it returns.
+    def utf8(value)
+      String.new(value.to_s, encoding: Encoding::UTF_8).scrub
     end
   end
 end

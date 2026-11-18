@@ -11,10 +11,6 @@ describe Puppet::Transport::Netscaler do
   let(:connection_info) { { host: 'ns.example.com', user: 'nsroot', password: password } }
   let(:auth_headers) { { 'X-NITRO-USER' => 'nsroot', 'X-NITRO-PASS' => 's3cr3t' } }
 
-  def json(body, status = 200)
-    { status: status, body: JSON.generate(body), headers: { 'Content-Type' => 'application/json' } }
-  end
-
   describe 'defaults' do
     it 'uses HTTPS on port 443' do
       expect(transport.port).to eq(443)
@@ -106,6 +102,104 @@ describe Puppet::Transport::Netscaler do
       stub_request(:get, "#{base}/server").to_return(status: 502, body: 'Bad Gateway')
       expect { transport.get('server') }.to raise_error(described_class::Error, %r{Bad Gateway})
     end
+
+    it 'shortens long non JSON error bodies' do
+      stub_request(:get, "#{base}/server").to_return(status: 500, body: "<html>#{'x' * 500}</html>")
+      expect { transport.get('server') }.to raise_error(described_class::Error) { |e|
+        expect(e.message).to end_with('...')
+        expect(e.message.length).to be < 400
+      }
+    end
+
+    it 'keeps error bodies valid UTF-8 when shortening them' do
+      stub_request(:get, "#{base}/server").to_return(status: 403, body: "#{'x' * 199}é et la suite".b)
+      expect { transport.get('server') }.to raise_error(described_class::Error) { |e|
+        expect(e.message).to be_valid_encoding
+        expect(e.message).to include("#{'x' * 199}é...")
+      }
+    end
+
+    it 'raises on a 404 that is not a NITRO answer instead of reporting "not found"' do
+      stub_request(:get, "#{base}/server/nope").to_return(status: 404, body: '<html>Not Found</html>')
+      expect { transport.get('server', 'nope') }.to raise_error(described_class::Error, %r{not a NITRO JSON object \(HTTP 404\)}) { |e|
+        expect(e.errorcode).to be_nil
+      }
+    end
+
+    it 'raises on a 404 with an empty body' do
+      stub_request(:get, "#{base}/server/nope").to_return(status: 404, body: '')
+      expect { transport.get('server', 'nope') }.to raise_error(described_class::Error, %r{\(HTTP 404\): empty body \(no reason given\)})
+    end
+
+    it 'gives the HTTP reason phrase of an empty error' do
+      stub_request(:get, "#{base}/server").to_return(status: [503, 'Service Unavailable'], body: '')
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{\(HTTP 503\): empty body \(Service Unavailable\)})
+    end
+
+    it 'skips leading whitespace when shortening a body' do
+      stub_request(:get, "#{base}/server").to_return(status: 502, body: "#{"\n" * 2000}<html>Bad Gateway</html>")
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{\(HTTP 502\): <html>Bad Gateway</html>})
+    end
+
+    it 'raises on a GET answered with an empty body' do
+      stub_request(:get, "#{base}/server").to_return(status: 200, body: '')
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{not a NITRO JSON object \(HTTP 200\): empty body})
+    end
+
+    it 'raises on a redirect instead of following it' do
+      stub_request(:get, "#{base}/server")
+        .to_return(status: 302, headers: { 'Location' => 'https://ns.example.com/nitro/v1/config/server' }, body: '<html>Found</html>')
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{redirected \(HTTP 302\) to https://ns\.example\.com/nitro/v1/config/server}) { |e|
+        expect(e.status).to eq(302)
+        expect(e.errorcode).to be_nil
+      }
+    end
+
+    it 'shortens a long Location' do
+      stub_request(:get, "#{base}/server").to_return(status: 302, headers: { 'Location' => "https://sso.example.com/#{'x' * 500}" })
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{to https://sso\.example\.com/x+\.\.\.; }) { |e|
+        expect(e.message.length).to be < 400
+      }
+    end
+
+    it 'leaves the query and fragment of the Location out of the error' do
+      stub_request(:get, "#{base}/server").to_return(status: 302, headers: { 'Location' => 'https://sso.example.com/login?state=t0ken&sid=s3ss#frag' })
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{to https://sso\.example\.com/login; }) { |e|
+        expect(e.message).not_to match(%r{t0ken|s3ss|frag})
+      }
+    end
+
+    it 'keeps the NITRO error message valid UTF-8' do
+      stub_request(:get, "#{base}/server").to_return(status: 400, body: "{\"errorcode\": 278, \"message\": \"caf\xE9\", \"severity\": \"ERROR\"}".b)
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{errorcode 278\): caf\uFFFD}) { |e|
+        expect(e.message).to be_valid_encoding
+      }
+    end
+
+    it 'raises on a redirect without a Location' do
+      stub_request(:get, "#{base}/server").to_return(status: 301)
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{redirected \(HTTP 301\) to an unknown location.*legacy device URL})
+    end
+
+    it 'raises on a 2xx body that is not JSON' do
+      stub_request(:get, "#{base}/server").to_return(status: 200, body: '<html>Login</html>')
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{not a NITRO JSON object \(HTTP 200\): <html>Login</html>})
+    end
+
+    it 'raises on a 2xx JSON body that is not an object' do
+      stub_request(:get, "#{base}/server").to_return(status: 200, body: '"Done"')
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{not a NITRO JSON object})
+    end
+
+    it 'raises on a JSON object without errorcode' do
+      stub_request(:get, "#{base}/server").to_return(status: 200, body: '{"status": "ok"}')
+      expect { transport.get('server') }.to raise_error(described_class::Error, %r{not a NITRO JSON object \(HTTP 200\)})
+    end
+
+    it 'raises on a 404 JSON object without errorcode instead of reporting "not found"' do
+      stub_request(:get, "#{base}/server/nope").to_return(status: 404, body: '{"error": "not found"}')
+      expect { transport.get('server', 'nope') }.to raise_error(described_class::Error, %r{not a NITRO JSON object \(HTTP 404\)})
+    end
   end
 
   describe 'write operations' do
@@ -121,6 +215,47 @@ describe Puppet::Transport::Netscaler do
       stub_request(:post, "#{base}/server")
         .to_return(json({ 'errorcode' => 273, 'message' => 'Resource already exists', 'severity' => 'ERROR' }, 409))
       expect { transport.post('server', 'name' => 'web1') }.to raise_error(described_class::Error, %r{Resource already exists})
+    end
+
+    # What NITRO answers (checked on a CPX 14.1): an empty text/html body on
+    # a create (201) and on an ?action= POST (200), JSON on PUT and DELETE
+    {
+      'POST create' => [:post, ['server', { 'name' => 'web1' }], { status: 201, body: '' }],
+      'POST action' => [:post, ['server', { 'name' => 'web1' }, { 'action' => 'enable' }], { status: 200, body: '' }],
+      'PUT' => [:put, ['server', { 'name' => 'web1' }, 'web1'], nil],
+      'DELETE' => [:delete, %w[server web1], nil],
+    }.each do |label, (verb, args, empty_answer)|
+      context "with a #{label}" do
+        let(:request) { stub_request(verb, %r{\A#{Regexp.escape(base)}/server}) }
+        let(:call) { -> { transport.public_send(verb, *args) } }
+
+        if empty_answer
+          it 'accepts the empty answer of NITRO' do
+            request.to_return(empty_answer.merge(headers: { 'Content-Type' => 'text/html; charset=UTF-8' }))
+            expect(call.call).to eq({})
+          end
+        else
+          it 'accepts the JSON answer of NITRO' do
+            request.to_return(json({}))
+            expect(call.call).to include('errorcode' => 0)
+          end
+        end
+
+        it 'raises on a 2xx HTML answer' do
+          request.to_return(status: empty_answer ? empty_answer[:status] : 200, body: '<html>Welcome</html>')
+          expect(&call).to raise_error(described_class::Error, %r{not a NITRO JSON object})
+        end
+
+        it 'raises on 204 No Content, which NITRO never sends' do
+          request.to_return(status: 204)
+          expect(&call).to raise_error(described_class::Error, %r{\(HTTP 204\): empty body})
+        end
+
+        it 'raises when redirected' do
+          request.to_return(status: 307, headers: { 'Location' => 'https://ns.example.com/' })
+          expect(&call).to raise_error(described_class::Error, %r{redirected \(HTTP 307\)})
+        end
+      end
     end
 
     it 'PUTs updates to the entity URL' do
@@ -246,7 +381,7 @@ describe Puppet::Transport::Netscaler do
       expect(http).to receive(:use_ssl=).with(true)
       expect(http).to receive(:verify_mode=).with(OpenSSL::SSL::VERIFY_PEER)
       allow(http).to receive_messages(:open_timeout= => nil, :read_timeout= => nil, start: http)
-      allow(http).to receive(:request).and_return(instance_double(Net::HTTPOK, body: '{}', code: '200', message: 'OK'))
+      allow(http).to receive(:request).and_return(instance_double(Net::HTTPOK, body: '{"errorcode": 0}', code: '200', message: 'OK'))
       transport.get('nsversion')
     end
 
@@ -258,7 +393,7 @@ describe Puppet::Transport::Netscaler do
       expect(http).to receive(:verify_mode=).with(OpenSSL::SSL::VERIFY_NONE)
       expect(http).to receive(:ca_file=).with('/etc/ca.pem')
       allow(http).to receive_messages(:open_timeout= => nil, :read_timeout= => nil, start: http)
-      allow(http).to receive(:request).and_return(instance_double(Net::HTTPOK, body: '{}', code: '200', message: 'OK'))
+      allow(http).to receive(:request).and_return(instance_double(Net::HTTPOK, body: '{"errorcode": 0}', code: '200', message: 'OK'))
       t.get('nsversion')
     end
   end

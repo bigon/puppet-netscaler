@@ -24,10 +24,6 @@ describe 'applying netscaler resources', type: :integration do
 
   after { FileUtils.rm_rf(vardir) }
 
-  def json(body, status = 200)
-    { status: status, body: JSON.generate(body) }
-  end
-
   def not_found
     json({ 'errorcode' => 258, 'message' => 'No such resource', 'severity' => 'ERROR' }, 404)
   end
