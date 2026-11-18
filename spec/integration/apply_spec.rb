@@ -28,14 +28,18 @@ describe 'applying netscaler resources', type: :integration do
     nitro_error(258, 'No such resource', 404)
   end
 
+  # Applies the resources (RAL instances) on the device; returns the report.
   # Resource API >= 2.0 would cache get() results on the type class for the
   # whole process; the types opt out of it, so nothing is cleared between runs
-  def apply(type, title, params)
+  def run_catalog(*resources)
     catalog = Puppet::Resource::Catalog.new
     catalog.host_config = false
-    resource = Puppet::Type.type(type).new(params.merge(title: title))
-    catalog.add_resource(resource)
-    report = Puppet.override(network_device: true) { catalog.apply.report }
+    resources.each { |r| catalog.add_resource(r) }
+    Puppet.override(network_device: true) { catalog.apply.report }
+  end
+
+  def apply(type, title, params)
+    report = run_catalog(Puppet::Type.type(type).new(params.merge(title: title)))
     failed = report.resource_statuses.values.select(&:failed)
     errors = report.logs.select { |l| %i[err crit alert emerg].include?(l.level) }.map(&:message)
     expect(failed).to be_empty, "failed: #{errors.join("\n")}"
@@ -46,10 +50,7 @@ describe 'applying netscaler resources', type: :integration do
   # Like apply, through a catalog resource so Sensitive values are marked as
   # such, the way the compiler does it; returns the whole report
   def apply_catalog(type, title, params, sensitive)
-    catalog = Puppet::Resource::Catalog.new
-    catalog.host_config = false
-    catalog.add_resource(Puppet::Resource.new(type, title, parameters: params, sensitive_parameters: sensitive).to_ral)
-    report = Puppet.override(network_device: true) { catalog.apply.report }
+    report = run_catalog(Puppet::Resource.new(type, title, parameters: params, sensitive_parameters: sensitive).to_ral)
     expect(report.resource_statuses.values.select(&:failed)).to be_empty
     report
   end
@@ -104,10 +105,7 @@ describe 'applying netscaler resources', type: :integration do
     it 'refuses to change an init_only attribute' do
       stub_lookup('lbvserver', 'vs1')
         .to_return(json('lbvserver' => [{ 'name' => 'vs1', 'servicetype' => 'HTTP', 'port' => 80 }]))
-      catalog = Puppet::Resource::Catalog.new
-      catalog.host_config = false
-      catalog.add_resource(Puppet::Type.type(:nitro_lbvserver).new(title: 'vs1', servicetype: 'HTTP', port: 8080))
-      report = Puppet.override(network_device: true) { catalog.apply.report }
+      report = run_catalog(Puppet::Type.type(:nitro_lbvserver).new(title: 'vs1', servicetype: 'HTTP', port: 8080))
       expect(report.logs.map(&:message).join("\n")).to include('init_only attribute')
       no_writes
     end
@@ -368,12 +366,7 @@ describe 'applying netscaler resources', type: :integration do
     it_behaves_like 'puppet runs'
 
     def apply_all(resources)
-      catalog = Puppet::Resource::Catalog.new
-      catalog.host_config = false
-      resources.each do |type, title, params|
-        catalog.add_resource(Puppet::Type.type(type).new(params.merge(title: title)))
-      end
-      report = Puppet.override(network_device: true) { catalog.apply.report }
+      report = run_catalog(*resources.map { |type, title, params| Puppet::Type.type(type).new(params.merge(title: title)) })
       expect(report.resource_statuses.values.select(&:failed)).to be_empty
       report
     end
