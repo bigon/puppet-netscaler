@@ -19,3 +19,14 @@ end
 gem 'rake', require: false
 
 gem 'openvox', ENV.fetch('OPENVOX_GEM_VERSION', ['>= 8', '< 10']), require: false, groups: [:test]
+
+# Resource API release the agent packages ship; 1.8.16 (puppet-agent 8.0 and
+# 8.1) only exists as a git tag, it was never published on rubygems.org
+case (resource_api = ENV.fetch('PUPPET_RESOURCE_API_VERSION', nil))
+when nil, ''
+  nil
+when '1.8.16'
+  gem 'puppet-resource_api', git: 'https://github.com/puppetlabs/puppet-resource_api.git', tag: resource_api, require: false, groups: [:test]
+else
+  gem 'puppet-resource_api', resource_api, require: false, groups: [:test]
+end

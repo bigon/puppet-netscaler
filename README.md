@@ -289,12 +289,24 @@ podman run --rm -v $PWD:/repo:Z -w /repo ghcr.io/voxpupuli/voxbox:10.1.1-openvox
 podman run --rm -v $PWD:/repo:Z -w /repo ghcr.io/voxpupuli/voxbox:10.1.1-openvox8 rubocop
 ```
 
+With Bundler, `PUPPET_RESOURCE_API_VERSION` selects the Resource API release
+(1.8.16 is taken from its git tag, it was never published on rubygems.org) and
+`OPENVOX_GEM_VERSION` the openvox gem. The openvox gems 8.24 to 8.33 accept
+only 1.9.2 or later, so test older releases with openvox 8.23.1, as CI does:
+
+```console
+OPENVOX_GEM_VERSION=8.23.1 PUPPET_RESOURCE_API_VERSION=1.8.16 bundle exec rake spec
+```
+
 ## Limitations
 
 * The tests mock all HTTP traffic. The module has not yet been validated
   against a live appliance.
-* Tested with the Puppet Resource API 1.9.2 (Debian's
-  ruby-puppet-resource-api) and 2.0.1.
+* Requires Puppet or OpenVox 8 or newer. The unit tests run against the
+  Puppet Resource API releases the agent packages ship: 1.8.16 (puppet-agent
+  8.0 and 8.1), 1.9.0 (puppet-agent 8.2 to 8.10, openvox-agent 8 before
+  8.28.1), 1.9.2 (openvox-agent 8.28.1 and later, Debian's
+  ruby-puppet-resource-api) and 2.0.1 (openvox-agent 9), plus 2.1.0.
 * NITRO sessions use the per-request `X-NITRO-USER`/`X-NITRO-PASS`
   authentication; no session token is cached.
 * Partitions (`/nitro/v1/config` in the admin partition only) and cluster/HA

@@ -20,3 +20,42 @@ jobs:
   puppet:
     name: Puppet
     uses: voxpupuli/gha-puppet/.github/workflows/basic.yml@v4
+
+  # The Puppet job resolves the newest Resource API each OpenVox major accepts
+  # (1.9.2 on 8, 2.1.0 on 9); this one covers the releases agents ship.
+  # OpenVox 8.23.1 is the last openvox gem that accepts a Resource API < 1.9.2.
+  resource_api:
+    name: Resource API ${{ matrix.resource_api }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # puppet-agent 8.0 and 8.1
+          - resource_api: '1.8.16'
+            openvox: '8.23.1'
+            ruby: '3.2'
+          # puppet-agent 8.2 to 8.10, openvox-agent 8 before 8.28.1
+          - resource_api: '1.9.0'
+            openvox: '8.23.1'
+            ruby: '3.2'
+          # openvox-agent 9
+          - resource_api: '2.0.1'
+            openvox: '~> 9.0'
+            ruby: '4.0'
+    env:
+      BUNDLE_WITHOUT: development:system_tests:release
+      OPENVOX_GEM_VERSION: ${{ matrix.openvox }}
+      PUPPET_RESOURCE_API_VERSION: ${{ matrix.resource_api }}
+    steps:
+      # yamllint disable-line rule:line-length
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Setup ruby
+        # yamllint disable-line rule:line-length
+        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199  # v1.338.0
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - name: Run tests
+        run: bundle exec rake parallel_spec
