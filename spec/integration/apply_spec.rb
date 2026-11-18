@@ -281,6 +281,14 @@ describe 'applying netscaler resources', type: :integration do
       no_writes
     end
 
+    it 'ignores a value NITRO returns that the compat type does not accept' do
+      stub_lookup('csvserver', 'cs1')
+        .to_return(json('csvserver' => [{ 'name' => 'cs1', 'servicetype' => 'HTTP', 'stateupdate' => 'UPDATEONBACKENDUPDATE', 'curstate' => 'UP' }]))
+      stub_lookup('csvserver_lbvserver_binding', 'cs1').to_return(json({ 'errorcode' => 0 }))
+      expect(apply(:netscaler_csvserver, 'cs1', service_type: 'HTTP')).not_to be_changed
+      no_writes
+    end
+
     it 'manages a monitor declared with puppetlabs-netscaler style values' do
       params = { type: 'HTTP', http_request: 'GET /app/status', response_codes: 200, destination_port: '8080', secure: 'NO' }
       stub_lookup('lbmonitor', 'probe_app').to_return(not_found)

@@ -134,6 +134,12 @@ describe PuppetX::Netscaler::CompatProvider do
       expect(provider.get(context).map { |r| r[:address] }).to eq(['www.example.com', '10.0.0.1'])
     end
 
+    it 'drops values that do not fit the type, also through a subclass' do
+      allow(client).to receive(:get).with('server', 's1').and_return('server' => [{ 'name' => 's1', 'domain' => 'www.example.com', 'state' => 'GONE' }])
+      expect(context).to receive(:debug).with(%r{ignoring state="GONE" returned by NITRO})
+      expect(provider.get(context, ['s1'])).to eq([{ ensure: 'present', name: 's1', address: 'www.example.com' }])
+    end
+
     it 'refuses to change the domain of a domain based server' do
       expect(context).to receive(:err).with(%r{domain cannot be changed})
       provider.set(context, change({ ensure: 'present', name: 's1', address: 'a.example.com' }, ensure: 'present', name: 's1', address: 'b.example.com'))
@@ -186,6 +192,14 @@ describe PuppetX::Netscaler::CompatProvider do
     it 'reads the default lbvserver from the binding' do
       allow(client).to receive(:get).with('csvserver', 'cs1').and_return('csvserver' => [{ 'name' => 'cs1', 'servicetype' => 'HTTP' }])
       allow(client).to receive(:get).with('csvserver_lbvserver_binding', 'cs1').and_return('csvserver_lbvserver_binding' => [{ 'name' => 'cs1', 'lbvserver' => 'lb1' }])
+      expect(provider.get(context, ['cs1'])).to eq([{ ensure: 'present', name: 'cs1', service_type: 'HTTP', default_lbvserver: 'lb1' }])
+    end
+
+    it 'drops a state update value the type does not accept' do
+      allow(client).to receive(:get).with('csvserver', 'cs1')
+                                    .and_return('csvserver' => [{ 'name' => 'cs1', 'servicetype' => 'HTTP', 'stateupdate' => 'UPDATEONBACKENDUPDATE' }])
+      allow(client).to receive(:get).with('csvserver_lbvserver_binding', 'cs1').and_return('csvserver_lbvserver_binding' => [{ 'name' => 'cs1', 'lbvserver' => 'lb1' }])
+      expect(context).to receive(:debug).with(%r{ignoring state_update="UPDATEONBACKENDUPDATE" returned by NITRO})
       expect(provider.get(context, ['cs1'])).to eq([{ ensure: 'present', name: 'cs1', service_type: 'HTTP', default_lbvserver: 'lb1' }])
     end
 

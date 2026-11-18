@@ -115,6 +115,8 @@ module PuppetX
     # puppetlabs-netscaler attribute names and values to NITRO records and
     # delegates the work to NitroResource.
     class CompatProvider
+      include ReturnedValues
+
       def self.compat
         COMPAT.fetch(compat_type)
       end
@@ -127,11 +129,13 @@ module PuppetX
         NitroResource.for(compat[:nitro])
       end
 
-      # names = [] means every resource (see NitroProvider#get)
+      # names = [] means every resource (see NitroProvider#get). Values that
+      # do not fit the type are dropped (see ReturnedValues), also those the
+      # from_nitro of a subclass adds.
       def get(context, names = nil)
         names = nil if names && names.empty?
         parents = names&.map { |n| title_keys(n)&.fetch(nitro.key) }&.compact
-        nitro.list(context.transport, parents).map { |rec| from_nitro(rec) }
+        nitro.list(context.transport, parents).map { |rec| drop_invalid(context, from_nitro(rec)) }
       end
 
       def canonicalize(_context, resources)

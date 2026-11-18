@@ -35,10 +35,34 @@ module PuppetX
       end
     end
 
+    # Drop values the appliance returns that do not fit the declared data
+    # type (e.g. enum values added in a newer firmware), instead of failing
+    # the whole type in strict mode. Shared by the nitro_* and the
+    # netscaler_* providers.
+    module ReturnedValues
+      # The resource without the attributes whose value does not fit
+      def drop_invalid(context, resource)
+        resource.select { |name, value| valid?(context, name, value) }
+      end
+
+      def valid?(context, name, value)
+        @types ||= {}
+        type = context.type.attributes.dig(name.to_sym, :type)
+        return true if type.nil?
+
+        @types[name.to_sym] ||= Puppet::ResourceApi::DataTypeHandling.parse_puppet_type(name, type)
+        err = Puppet::ResourceApi::DataTypeHandling.try_validate(@types[name.to_sym], value, '')
+        context.debug("ignoring #{name}=#{value.inspect} returned by NITRO: #{err}") if err
+        err.nil?
+      end
+    end
+
     # Base class of the generated nitro_* providers. Puppet attribute names
     # map 1:1 to NITRO names, except the namevar of plain entities which is
     # always `name` in Puppet.
     class NitroProvider
+      include ReturnedValues
+
       def self.nitro
         @nitro ||= NitroResource.for(nitro_resource)
       end
@@ -170,20 +194,6 @@ module PuppetX
       def parent_of(name)
         key_attr = attributes.find { |_n, a| a['api'] == nitro.key }.first
         name.is_a?(Hash) ? name[key_attr.to_sym] : name
-      end
-
-      # Drop values the appliance returns that do not fit the declared data
-      # type (e.g. enum values added in a newer firmware), instead of failing
-      # the whole type in strict mode.
-      def valid?(context, name, value)
-        @types ||= {}
-        type = context.type.attributes.dig(name.to_sym, :type)
-        return true if type.nil?
-
-        @types[name] ||= Puppet::ResourceApi::DataTypeHandling.parse_puppet_type(name, type)
-        err = Puppet::ResourceApi::DataTypeHandling.try_validate(@types[name], value, '')
-        context.debug("ignoring #{name}=#{value.inspect} returned by NITRO: #{err}") if err
-        err.nil?
       end
     end
   end
