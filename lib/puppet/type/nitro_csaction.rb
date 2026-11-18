@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_csaction',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `csaction` resources (entity).
 
 Configuration for Content Switching action resource. Attributes map 1:1 onto the NITRO `csaction` API, see the NITRO reference.

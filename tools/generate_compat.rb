@@ -34,6 +34,7 @@ module CompatGenerator
     definition = PuppetX::Netscaler::Compat.definition(type_name)
     definition_attributes = definition[:attributes]
     docs = definition.delete(:docs)
+    terminator = NitroGenerator.heredoc_terminator(docs)
     <<~RUBY
       # frozen_string_literal: true
 
@@ -44,9 +45,9 @@ module CompatGenerator
 
       Puppet::ResourceApi.register_type(
         name: #{definition.delete(:name).inspect},
-        docs: <<~EOS,
+        docs: <<~'#{terminator}',
       #{docs.gsub(%r{^}, '    ').gsub(%r{^ +$}, '')}
-        EOS
+        #{terminator}
         features: #{literal(definition.delete(:features))},
         attributes: #{literal(definition.delete(:attributes), 2)},
       )
@@ -96,9 +97,9 @@ module CompatGenerator
   end
 
   def run(root)
-    PuppetX::Netscaler::COMPAT.each_key do |name|
-      File.write(File.join(root, "lib/puppet/type/#{name}.rb"), render(name))
-    end
+    # Render everything first, so a render error writes nothing
+    files = PuppetX::Netscaler::COMPAT.keys.to_h { |name| [name, render(name)] }
+    files.each { |name, content| File.write(File.join(root, "lib/puppet/type/#{name}.rb"), content) }
   end
 end
 

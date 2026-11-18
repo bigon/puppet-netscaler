@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_server',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `server` resources (entity).
 
 Configuration for server resource. Attributes map 1:1 onto the NITRO `server` API, see the NITRO reference.

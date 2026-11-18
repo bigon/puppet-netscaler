@@ -7,7 +7,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: "netscaler_servicegroup_lbmonitor_binding",
-  docs: <<~EOS,
+  docs: <<~'EOS',
     @summary Manage a binding between a servicegroup and a loadbalancing monitor.
 
     Compatibility type for manifests written for puppetlabs-netscaler. It is backed by the `nitro_servicegroup_lbmonitor_binding` implementation; new code should use `nitro_servicegroup_lbmonitor_binding`.

@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_csvserver_lbvserver_binding',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `csvserver_lbvserver_binding` resources (binding).
 
 Binding Resource definition for describing association between csvserver and lbvserver resources Attributes map 1:1 onto the NITRO `csvserver_lbvserver_binding` API, see the NITRO reference.

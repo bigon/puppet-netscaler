@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'tmpdir'
+require 'puppet/resource_api'
 require_relative '../../../tools/generate'
 
 describe NitroGenerator do
@@ -28,7 +29,19 @@ describe NitroGenerator do
     described_class.build_spec(resource, described_class.load_oas(oas, resource), cfg, described_class.load_get_fields(rest_dir, resource))
   end
 
+  describe '.load_oas' do
+    it 'refuses an OAS file that is not valid UTF-8' do
+      File.binwrite(File.join(oas, 'pkg', 'server.yaml'), "info:\n  description: caf\xE9\n")
+      expect { described_class.load_oas(oas, 'server') }.to raise_error(described_class::DefinitionError, %r{\Aserver: .*server\.yaml is not valid UTF-8})
+    end
+  end
+
   describe '.load_get_fields' do
+    it 'refuses a REST reference page that is not valid UTF-8' do
+      File.binwrite(File.join(rest_dir, 'pkg', 'server.html'), "<p>caf\xE9</p>")
+      expect { described_class.load_get_fields(rest_dir, 'server') }.to raise_error(described_class::DefinitionError, %r{\Aserver: .*server\.html is not valid UTF-8})
+    end
+
     it 'lists the attributes returned by GET, including the unquoted keys' do
       fields = described_class.load_get_fields(rest_dir, 'server')
       expect(fields).to include('name', 'ipaddress', 'domain', 'state', 'td', 'comment')
@@ -166,6 +179,34 @@ describe NitroGenerator do
       code = described_class.render_type(spec)
       expect(code).to include("name: 'nitro_server'", 'type: "Optional[Integer[0, 4094]]"', %q(type: "Optional[Enum['YES', 'NO']]"))
       expect { RubyVM::InstructionSequence.compile(code) }.not_to raise_error
+    end
+
+    it 'keeps the NITRO texts literal when the type is loaded' do
+      registered = load_rendered_type(described_class.render_type(spec), :nitro_server)
+      expect(registered[:docs]).to include("Fixture server resource, not \#{interpolated} nor \\n escaped.")
+      expect(registered[:attributes][:domain][:desc]).to eq("Fixture domain, not \#{interpolated} nor \\n escaped.")
+    end
+
+    it 'picks a heredoc terminator that no line of the text matches' do
+      expect(described_class.heredoc_terminator("Text\nNOEOS\nEOS more")).to eq('EOS')
+      expect(described_class.heredoc_terminator("Text\n  EOS\n\fEOS1\r\nmore")).to eq('EOS2')
+      expect(described_class.heredoc_terminator("Text\nEOS \nmore")).to eq('EOS')
+    end
+
+    it 'keeps a NITRO description holding the heredoc terminator' do
+      # EOS1 followed by a space does not end the heredoc
+      text = "Text\n  EOS\n\fEOS\nEOS1 \nmore"
+      registered = load_rendered_type(described_class.render_type(spec.merge('doc' => text)), :nitro_server)
+      expect(registered[:docs]).to include("#{text} Attributes map")
+    end
+
+    it 'refuses a NITRO version that does not fit in a comment' do
+      expect { described_class.nitro_version({ 'info' => { 'version' => "v1-14.1\n=begin" } }, 'server') }.to raise_error(described_class::DefinitionError, %r{\Aserver: NITRO version})
+    end
+
+    it 'accepts any NITRO version that fits in a comment' do
+      expect(described_class.nitro_version({ 'info' => { 'version' => 'v1-14.1-73.58+hotfix 2' } }, 'server')).to eq('14.1-73.58+hotfix 2')
+      expect(described_class.nitro_version({}, 'server')).to eq('')
     end
   end
 

@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_service_lbmonitor_binding',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `service_lbmonitor_binding` resources (binding).
 
 Binding Resource definition for describing association between service and lbmonitor resources Attributes map 1:1 onto the NITRO `service_lbmonitor_binding` API, see the NITRO reference.

@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_csvserver',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `csvserver` resources (entity).
 
 Configuration for CS virtual server resource. Attributes map 1:1 onto the NITRO `csvserver` API, see the NITRO reference.

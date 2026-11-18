@@ -27,7 +27,7 @@ components:
           description: Fixture address.
           type: string
         domain: &domain
-          description: Fixture domain.
+          description: 'Fixture domain, not #{interpolated} nor \n escaped.'
           type: string
         ipv6address: &ipv6address
           default: NO
@@ -151,5 +151,5 @@ paths:
                     - required:
                         - name
 tags:
-  - description: Fixture server resource.
+  - description: 'Fixture server resource, not #{interpolated} nor \n escaped.'
     name: server

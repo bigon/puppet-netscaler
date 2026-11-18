@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_lbmonitor',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `lbmonitor` resources (entity).
 
 Configuration for monitor resource. Attributes map 1:1 onto the NITRO `lbmonitor` API, see the NITRO reference.

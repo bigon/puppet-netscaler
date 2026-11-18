@@ -7,7 +7,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: "netscaler_cspolicy",
-  docs: <<~EOS,
+  docs: <<~'EOS',
     @summary Manage basic netscaler cs policy objects.
 
     Compatibility type for manifests written for puppetlabs-netscaler. It is backed by the `nitro_cspolicy` implementation; new code should use `nitro_cspolicy`.

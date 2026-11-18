@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_sslcertkey',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `sslcertkey` resources (entity).
 
 Configuration for certificate key resource. Attributes map 1:1 onto the NITRO `sslcertkey` API, see the NITRO reference.

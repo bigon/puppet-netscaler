@@ -7,7 +7,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: "netscaler_sslcertkey",
-  docs: <<~EOS,
+  docs: <<~'EOS',
     @summary Configuration for Imported Certfile resource
 
     Compatibility type for manifests written for puppetlabs-netscaler. It is backed by the `nitro_sslcertkey` implementation; new code should use `nitro_sslcertkey`.

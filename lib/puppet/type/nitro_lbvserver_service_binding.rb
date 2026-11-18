@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_lbvserver_service_binding',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `lbvserver_service_binding` resources (binding).
 
 Binding Resource definition for describing association between lbvserver and service resources Attributes map 1:1 onto the NITRO `lbvserver_service_binding` API, see the NITRO reference.

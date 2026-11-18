@@ -7,7 +7,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: "netscaler_servicegroup",
-  docs: <<~EOS,
+  docs: <<~'EOS',
     @summary Configuring a service group enables you to manage a group of services as easily as a single service. For example, if you enable or disable any option, such as compression, health monitoring or graceful shutdown, for a service group, the option gets enabled for all the members of the service group.
 
     Compatibility type for manifests written for puppetlabs-netscaler. It is backed by the `nitro_servicegroup` implementation; new code should use `nitro_servicegroup`.

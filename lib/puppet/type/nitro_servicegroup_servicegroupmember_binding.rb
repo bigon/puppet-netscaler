@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_servicegroup_servicegroupmember_binding',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `servicegroup_servicegroupmember_binding` resources (binding).
 
 Binding Resource definition for describing association between servicegroup and servicegroupmember resources Attributes map 1:1 onto the NITRO `servicegroup_servicegroupmember_binding` API, see the NITRO reference.

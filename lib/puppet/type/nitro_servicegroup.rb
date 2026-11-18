@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_servicegroup',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `servicegroup` resources (entity).
 
 Configuration for service group resource. Attributes map 1:1 onto the NITRO `servicegroup` API, see the NITRO reference.

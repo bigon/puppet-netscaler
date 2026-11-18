@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_lbvserver',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `lbvserver` resources (entity).
 
 Configuration for Load Balancing Virtual Server resource. Attributes map 1:1 onto the NITRO `lbvserver` API, see the NITRO reference.

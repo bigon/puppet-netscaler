@@ -7,7 +7,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: "netscaler_service",
-  docs: <<~EOS,
+  docs: <<~'EOS',
     @summary Manage service on the NetScaler appliance. If the service is domain based, before you create the service, create the server entry by using the add server command. Then, in this command, specify the Server parameter.
 
     Compatibility type for manifests written for puppetlabs-netscaler. It is backed by the `nitro_service` implementation; new code should use `nitro_service`.

@@ -7,7 +7,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: "netscaler_csaction",
-  docs: <<~EOS,
+  docs: <<~'EOS',
     @summary Manage basic netscaler content switching action objects.
 
     Compatibility type for manifests written for puppetlabs-netscaler. It is backed by the `nitro_csaction` implementation; new code should use `nitro_csaction`.

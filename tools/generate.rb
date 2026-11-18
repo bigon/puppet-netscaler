@@ -27,13 +27,20 @@ module NitroGenerator
   # Attributes that are never managed (rename target, transient flags)
   SKIP = %w[newname].freeze
 
+  # NITRO definitions or resources.yaml settings a type cannot be built from
+  # (as opposed to a bug in the generator)
+  class DefinitionError < ArgumentError; end
+
   module_function
 
   def load_oas(dir, resource)
     path = Dir.glob(File.join(dir, '*', "#{resource}.yaml")).first
-    raise ArgumentError, "No OAS file for #{resource} in #{dir}" unless path
+    raise DefinitionError, "No OAS file for #{resource} in #{dir}" unless path
 
-    parse_yaml(File.read(path))
+    text = File.read(path, encoding: 'UTF-8')
+    raise DefinitionError, "#{resource}: #{path} is not valid UTF-8" unless text.valid_encoding?
+
+    parse_yaml(text)
   end
 
   # Attribute names listed in the "get (all)" response payload of the NITRO
@@ -42,7 +49,10 @@ module NitroGenerator
     path = Dir.glob(File.join(dir, '*', "#{resource}.html")).first
     return nil unless path
 
-    text = CGI.unescapeHTML(File.read(path).gsub(%r{<[^>]+>}, ' ')).gsub(%r{\s+}, ' ')
+    html = File.read(path, encoding: 'UTF-8')
+    raise DefinitionError, "#{resource}: #{path} is not valid UTF-8" unless html.valid_encoding?
+
+    text = CGI.unescapeHTML(html.gsub(%r{<[^>]+>}, ' ')).gsub(%r{\s+}, ' ')
     start = text.index('get (all)') || text.index('get URL') or return nil
     payload = text.index('Response Payload', start) or return nil
     segment = text[payload, 30_000]
@@ -68,6 +78,28 @@ module NitroGenerator
     return '' if text.nil?
 
     text.sub(%r{\A\|\s*\n?}, '').gsub(%r{^\t}, '').strip
+  end
+
+  # Terminator of the non-interpolating heredoc (<<-'EOS', <<~'EOS') that
+  # holds a free text in a generated file, so backslashes and #{ stay
+  # literal: EOS, or EOS1, EOS2... when a line of the text would end it early
+  # (Ruby skips any whitespace before the terminator of <<- and <<~, but
+  # none after it)
+  def heredoc_terminator(text)
+    lines = text.lines.map { |line| line.chomp.lstrip }
+    terminator = 'EOS'
+    count = 0
+    terminator = "EOS#{count += 1}" while lines.include?(terminator)
+    terminator
+  end
+
+  # The NITRO release goes into comments of the generated files: refuse what
+  # would break out of them
+  def nitro_version(oas, resource)
+    version = oas.dig('info', 'version').to_s.delete_prefix('v1-')
+    raise DefinitionError, "#{resource}: NITRO version #{version.inspect} does not fit in a comment" if version.match?(%r{[[:cntrl:]]})
+
+    version
   end
 
   def body_required(operation)
@@ -137,7 +169,7 @@ module NitroGenerator
     paths = oas['paths']
     coll = paths["/#{resource}"] || {}
     item_path, item = paths.find { |p, _| p.start_with?("/#{resource}/{") }
-    raise ArgumentError, "#{resource}: no item path" unless item_path
+    raise DefinitionError, "#{resource}: no item path" unless item_path
 
     key = item_path[%r{\{(.+)\}}, 1]
     actions = oas.dig('components', 'parameters', 'action', 'schema', 'enum') || []
@@ -161,7 +193,7 @@ module NitroGenerator
     init_only_extra = cfg.fetch('init_only', [])
 
     namevars = cfg['namevars'] || [key]
-    raise ArgumentError, "#{resource}: first namevar must be #{key}" unless namevars.first == key
+    raise DefinitionError, "#{resource}: first namevar must be #{key}" unless namevars.first == key
 
     post = coll['post'] || {}
     create_required = body_required(post) - [key]
@@ -191,7 +223,7 @@ module NitroGenerator
                   end
       type = puppet_type(schema)
       if sensitive.include?(api)
-        raise ArgumentError, "#{resource}: sensitive attribute #{api} is not a string" unless type == 'Optional[String]'
+        raise DefinitionError, "#{resource}: sensitive attribute #{api} is not a string" unless type == 'Optional[String]'
 
         type = 'Optional[Variant[String, Sensitive[String]]]'
       end
@@ -212,12 +244,12 @@ module NitroGenerator
       attributes[pname]['items'] = 'integer' if item_kind(schema) == 'integer'
       attributes[pname]['sensitive'] = true if sensitive.include?(api)
       next unless ordered.include?(api)
-      raise ArgumentError, "#{resource}: ordered attribute #{api} is not a list" unless attr_kind(schema) == 'array'
+      raise DefinitionError, "#{resource}: ordered attribute #{api} is not a list" unless attr_kind(schema) == 'array'
 
       attributes[pname]['ordered'] = true
     end
     namevars.each do |nv|
-      raise ArgumentError, "#{resource}: namevar #{nv} is not an attribute" unless attributes.values.any? { |a| a['api'] == nv }
+      raise DefinitionError, "#{resource}: namevar #{nv} is not an attribute" unless attributes.values.any? { |a| a['api'] == nv }
     end
 
     put = item['put'] || coll['put'] || {}
@@ -229,8 +261,8 @@ module NitroGenerator
     rebind_exclude = cfg.fetch('rebind_exclude', [])
     update_with = cfg.fetch('update_with', {})
     unknown = (rebind_exclude + sensitive + ordered + update_with.keys + update_with.values.flatten).reject { |a| attributes.values.any? { |at| at['api'] == a } }
-    raise ArgumentError, "#{resource}: rebind_exclude/sensitive/ordered/update_with name unknown attributes #{unknown.join(', ')}" unless unknown.empty?
-    raise ArgumentError, "#{resource}: rebind_exclude is only for bindings" if kind != 'binding' && !rebind_exclude.empty?
+    raise DefinitionError, "#{resource}: rebind_exclude/sensitive/ordered/update_with name unknown attributes #{unknown.join(', ')}" unless unknown.empty?
+    raise DefinitionError, "#{resource}: rebind_exclude is only for bindings" if kind != 'binding' && !rebind_exclude.empty?
 
     {
       'resource' => resource,
@@ -248,7 +280,7 @@ module NitroGenerator
       'action_updates' => action_updates,
       'autorequire' => autorequires(resource, cfg, attributes),
       'doc' => clean_desc(oas.dig('tags', 0, 'description')),
-      'nitro_version' => oas.dig('info', 'version').to_s.delete_prefix('v1-'),
+      'nitro_version' => nitro_version(oas, resource),
       'attributes' => attributes,
     }
   end
@@ -259,7 +291,7 @@ module NitroGenerator
   def autorequires(resource, cfg, attributes)
     cfg.fetch('autorequire', {}).each_with_object({}) do |(api, targets), result|
       pname = attributes.find { |_n, a| a['api'] == api }&.first
-      raise ArgumentError, "#{resource}: autorequire on unknown attribute #{api}" unless pname
+      raise DefinitionError, "#{resource}: autorequire on unknown attribute #{api}" unless pname
 
       Array(targets).each do |target|
         types = ["nitro_#{target}"]
@@ -286,20 +318,24 @@ module NitroGenerator
     lines << ''
     lines << 'Puppet::ResourceApi.register_type('
     lines << "  name: '#{type}',"
-    lines << '  docs: <<-EOS,'
-    lines << "@summary Manages NITRO `#{spec['resource']}` resources (#{spec['kind']})."
-    lines << ''
-    lines << "#{spec['doc']} Attributes map 1:1 onto the NITRO `#{spec['resource']}` API, see the NITRO reference."
-    lines << ' Only attributes set in the manifest are managed.'
-    lines << ''
-    lines << if spec['kind'] == 'binding'
-               "The title is split into #{spec['namevars'].map { |n| "`#{n}`" }.join(', ')}."
-             elsif spec['kind'] == 'settings'
-               'This entity cannot be created or deleted; it exists together with its parent and only its settings are managed.'
-             else
-               "The title is the NITRO `#{spec['key']}`."
-             end
-    lines << '  EOS'
+    docs = []
+    docs << "@summary Manages NITRO `#{spec['resource']}` resources (#{spec['kind']})."
+    docs << ''
+    docs << "#{spec['doc']} Attributes map 1:1 onto the NITRO `#{spec['resource']}` API, see the NITRO reference."
+    docs << ' Only attributes set in the manifest are managed.'
+    docs << ''
+    docs << if spec['kind'] == 'binding'
+              "The title is split into #{spec['namevars'].map { |n| "`#{n}`" }.join(', ')}."
+            elsif spec['kind'] == 'settings'
+              'This entity cannot be created or deleted; it exists together with its parent and only its settings are managed.'
+            else
+              "The title is the NITRO `#{spec['key']}`."
+            end
+    docs = docs.join("\n")
+    terminator = heredoc_terminator(docs)
+    lines << "  docs: <<-'#{terminator}',"
+    lines << docs
+    lines << "  #{terminator}"
     # canonicalize sorts NITRO lists, and adds the composite :title of bindings
     lines << "  features: ['remote_resource', 'simple_get_filter', 'canonicalize'],"
     if spec['kind'] == 'binding'
@@ -434,7 +470,7 @@ module NitroGenerator
     report = []
     fresh = config.filter_map do |res, cfg|
       build_spec(res, load_oas(oas_dir, res), cfg || {}, load_get_fields(rest_dir, res))
-    rescue ArgumentError => e
+    rescue DefinitionError => e
       report << "#{res}: cannot be built from these definitions (#{e.message})"
       nil
     end
@@ -508,15 +544,15 @@ module NitroGenerator
 
   def run(oas_dir, rest_dir, config_file, root)
     specs = build_all(oas_dir, rest_dir, config_file)
-    FileUtils.mkdir_p(File.join(root, 'lib/puppet_x/netscaler'))
-    File.write(File.join(root, 'lib/puppet_x/netscaler/specs.rb'), render_specs(specs))
+    # Render everything first, so a render error writes nothing
+    files = { 'lib/puppet_x/netscaler/specs.rb' => render_specs(specs) }
     specs.each do |spec|
       type = "nitro_#{spec['resource']}"
-      FileUtils.mkdir_p(File.join(root, 'lib/puppet/type'))
-      FileUtils.mkdir_p(File.join(root, "lib/puppet/provider/#{type}"))
-      File.write(File.join(root, "lib/puppet/type/#{type}.rb"), render_type(spec))
-      File.write(File.join(root, "lib/puppet/provider/#{type}/#{type}.rb"), render_provider(spec))
+      files["lib/puppet/type/#{type}.rb"] = render_type(spec)
+      files["lib/puppet/provider/#{type}/#{type}.rb"] = render_provider(spec)
     end
+    files.keys.map { |path| File.dirname(File.join(root, path)) }.uniq.each { |dir| FileUtils.mkdir_p(dir) }
+    files.each { |path, content| File.write(File.join(root, path), content) }
     specs
   end
 end

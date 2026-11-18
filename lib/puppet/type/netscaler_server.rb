@@ -7,7 +7,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: "netscaler_server",
-  docs: <<~EOS,
+  docs: <<~'EOS',
     @summary Manage basic netscaler server objects. The NetScaler appliance supports two types of servers: IP address based servers and domain based servers.
 
     Compatibility type for manifests written for puppetlabs-netscaler. It is backed by the `nitro_server` implementation; new code should use `nitro_server`.

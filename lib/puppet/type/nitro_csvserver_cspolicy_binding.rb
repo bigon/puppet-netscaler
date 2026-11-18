@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_csvserver_cspolicy_binding',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `csvserver_cspolicy_binding` resources (binding).
 
 Binding Resource definition for describing association between csvserver and cspolicy resources Attributes map 1:1 onto the NITRO `csvserver_cspolicy_binding` API, see the NITRO reference.

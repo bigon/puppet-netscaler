@@ -6,7 +6,7 @@ require 'puppet/resource_api'
 
 Puppet::ResourceApi.register_type(
   name: 'nitro_sslvserver',
-  docs: <<-EOS,
+  docs: <<-'EOS',
 @summary Manages NITRO `sslvserver` resources (settings).
 
 Configuration for SSL virtual server resource. Attributes map 1:1 onto the NITRO `sslvserver` API, see the NITRO reference.
