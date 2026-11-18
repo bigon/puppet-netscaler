@@ -183,7 +183,11 @@ the run.
 
 1. Replace puppetlabs-netscaler with this module (in your `Puppetfile`, for
    example). Both are called `netscaler`, so only one can be installed.
-2. Keep the existing `device.conf`. The legacy URL form works as is.
+2. Keep the existing `device.conf`. The legacy URL form is still accepted, but
+   the appliance's certificate is now verified (see "Known differences"
+   below). If the appliance uses a self-signed certificate, append
+   `?ssl_verify=false` to the URL, or better, switch to a HOCON config with
+   `ca_file`.
 3. Keep `include netscaler` on the proxy agent if you have it. The class still
    exists but does nothing, because the faraday gems are no longer needed. You
    can uninstall them.
@@ -202,6 +206,16 @@ Known differences:
   `netscaler_route`, `netscaler_user`, `netscaler_file`, ...) have no
   compatibility type yet.
 * Changes are saved by default (`save_config`). The old module never saved.
+* The TLS certificate of the appliance is verified by default (`ssl_verify`),
+  for the legacy URL form too. This is a deliberate change: puppetlabs-netscaler
+  never verified it, so anyone able to intercept the connection could read the
+  credentials. To get the old behaviour back, disable verification explicitly,
+  either in the legacy URL
+  (`url https://nsroot:secret@ns01.example.com/nitro/v1/?ssl_verify=false`) or
+  with `ssl_verify: false` in the HOCON config. The safer option is to keep
+  verification on and point `ca_file` at the CA that signed the appliance's
+  certificate (or at the self-signed certificate itself). `ca_file` is only
+  available in the HOCON config, not as a legacy URL parameter.
 
 ## Adding NITRO resources
 
