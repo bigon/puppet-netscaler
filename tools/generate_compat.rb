@@ -12,6 +12,7 @@
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 require 'puppet'
 require 'puppet_x/netscaler/compat_provider'
+require_relative 'generate'
 
 module CompatGenerator
   module_function
@@ -49,7 +50,7 @@ module CompatGenerator
         features: #{literal(definition.delete(:features))},
         attributes: #{literal(definition.delete(:attributes), 2)},
       )
-      #{[render_autorequires(type_name), render_sensitive(type_name, definition_attributes)].reject(&:empty?).join("\n")}
+      #{[render_autorequires(type_name), render_sensitive(type_name, definition_attributes), NitroGenerator.render_get_cache(type_name).join("\n")].reject(&:empty?).join("\n")}
     RUBY
   end
 

@@ -197,3 +197,8 @@ This entity cannot be created or deleted; it exists together with its parent and
     },
   },
 )
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:nitro_sslvserver).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:nitro_sslvserver).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

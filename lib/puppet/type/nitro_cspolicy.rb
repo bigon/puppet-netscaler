@@ -44,3 +44,8 @@ The title is the NITRO `policyname`.
     },
   },
 )
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:nitro_cspolicy).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:nitro_cspolicy).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

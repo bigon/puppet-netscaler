@@ -311,7 +311,23 @@ module NitroGenerator
     lines << '  },'
     lines << ')'
     lines.concat(render_sensitive(type, spec['attributes']))
+    lines.concat(render_get_cache(type))
     "#{lines.join("\n")}\n"
+  end
+
+  # Resource API >= 2.0 keeps a get() cache on the type class for the whole
+  # process, never cleared: in one `puppet device` run, a device would see the
+  # state cached for the previous one, and writes do not invalidate it. The
+  # transport already keeps one listing per type and device, so the types
+  # opt out of it and behave like on Resource API 1.9 (OpenVox 8).
+  def render_get_cache(type)
+    [
+      '',
+      '# The transport caches the NITRO listings per device; no Resource API get cache',
+      "if Puppet::Type.type(:#{type}).respond_to?(:rsapi_provider_get_cache)",
+      "  Puppet::Type.type(:#{type}).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }",
+      'end',
+    ]
   end
 
   # Secrets: Puppet redacts the events of the properties, also when the

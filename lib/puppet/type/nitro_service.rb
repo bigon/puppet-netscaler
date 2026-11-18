@@ -243,3 +243,8 @@ The title is the NITRO `name`.
     },
   },
 )
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:nitro_service).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:nitro_service).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

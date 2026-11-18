@@ -167,3 +167,8 @@ Puppet::ResourceApi.register_type(
 type = Puppet::Type.type(:netscaler_service)
 type.autorequire(:netscaler_server) { self[:server_name] }
 type.autorequire(:nitro_server) { self[:server_name] }
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:netscaler_service).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:netscaler_service).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

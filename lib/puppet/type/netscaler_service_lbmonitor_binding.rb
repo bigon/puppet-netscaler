@@ -41,3 +41,8 @@ type.autorequire(:netscaler_service) { self[:name].to_s[%r{\A(?<name>[^/]+)/(?<m
 type.autorequire(:nitro_service) { self[:name].to_s[%r{\A(?<name>[^/]+)/(?<monitor_name>.+)\z}, 'name'] }
 type.autorequire(:netscaler_lbmonitor) { self[:name].to_s[%r{\A(?<name>[^/]+)/(?<monitor_name>.+)\z}, 'monitor_name'] }
 type.autorequire(:nitro_lbmonitor) { self[:name].to_s[%r{\A(?<name>[^/]+)/(?<monitor_name>.+)\z}, 'monitor_name'] }
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:netscaler_service_lbmonitor_binding).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:netscaler_service_lbmonitor_binding).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

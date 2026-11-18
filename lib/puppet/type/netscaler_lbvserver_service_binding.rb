@@ -37,3 +37,8 @@ type.autorequire(:netscaler_lbvserver) { self[:name].to_s[%r{\A(?<name>[^/]+)/(?
 type.autorequire(:nitro_lbvserver) { self[:name].to_s[%r{\A(?<name>[^/]+)/(?<servicename>.+)\z}, 'name'] }
 type.autorequire(:netscaler_service) { self[:name].to_s[%r{\A(?<name>[^/]+)/(?<servicename>.+)\z}, 'servicename'] }
 type.autorequire(:nitro_service) { self[:name].to_s[%r{\A(?<name>[^/]+)/(?<servicename>.+)\z}, 'servicename'] }
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:netscaler_lbvserver_service_binding).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:netscaler_lbvserver_service_binding).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

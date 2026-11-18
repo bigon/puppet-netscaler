@@ -44,3 +44,8 @@ The title is split into `vservername`, `ciphername`.
     },
   },
 )
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:nitro_sslvserver_sslciphersuite_binding).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:nitro_sslvserver_sslciphersuite_binding).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

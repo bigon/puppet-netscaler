@@ -86,3 +86,8 @@ Puppet::Type.type(:netscaler_sslcertkey).class_eval do
     super((sensitive_parameters - %i[passplain]) | %i[].select { |n| parameter(n) })
   end
 end
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:netscaler_sslcertkey).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:netscaler_sslcertkey).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

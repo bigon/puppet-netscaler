@@ -95,6 +95,20 @@ describe 'netscaler types' do
     end
   end
 
+  # Resource API >= 2.0 keeps a get() cache on the type class for the whole
+  # process; the transport caches per device instead (1.9.x has no such cache)
+  describe 'Resource API get cache' do
+    (PuppetX::Netscaler::SPECS.keys.map { |r| "nitro_#{r}" } + PuppetX::Netscaler::COMPAT.keys).each do |name|
+      it "is not kept by #{name}" do
+        type = Puppet::Type.type(name.to_sym)
+        skip 'Resource API < 2.0 has no get cache' unless type.respond_to?(:rsapi_provider_get_cache)
+
+        type.rsapi_provider_get_cache.add('x', ensure: 'present')
+        expect(type.rsapi_provider_get_cache.get('x')).to be_nil
+      end
+    end
+  end
+
   describe 'generated compat type files' do
     require_relative '../../../../tools/generate_compat'
 

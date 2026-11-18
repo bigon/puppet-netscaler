@@ -389,3 +389,8 @@ Puppet::Type.type(:netscaler_lbmonitor).class_eval do
     super((sensitive_parameters - %i[password radius_key secondary_password]) | %i[snmp_community].select { |n| parameter(n) })
   end
 end
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:netscaler_lbmonitor).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:netscaler_lbmonitor).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

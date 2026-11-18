@@ -252,3 +252,8 @@ Puppet::ResourceApi.register_type(
 type = Puppet::Type.type(:netscaler_csvserver)
 type.autorequire(:netscaler_lbvserver) { self[:default_lbvserver] }
 type.autorequire(:nitro_lbvserver) { self[:default_lbvserver] }
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:netscaler_csvserver).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:netscaler_csvserver).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

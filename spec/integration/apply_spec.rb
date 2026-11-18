@@ -32,9 +32,9 @@ describe 'applying netscaler resources', type: :integration do
     json({ 'errorcode' => 258, 'message' => 'No such resource', 'severity' => 'ERROR' }, 404)
   end
 
-  def apply(type, title, params, same_process = false)
-    # every real run is a new process: drop Resource API's per-type get cache
-    Puppet::Type.type(type).rsapi_provider_get_cache.clear unless same_process
+  # Resource API >= 2.0 would cache get() results on the type class for the
+  # whole process; the types opt out of it, so nothing is cleared between runs
+  def apply(type, title, params)
     catalog = Puppet::Resource::Catalog.new
     catalog.host_config = false
     resource = Puppet::Type.type(type).new(params.merge(title: title))
@@ -50,7 +50,6 @@ describe 'applying netscaler resources', type: :integration do
   # Like apply, through a catalog resource so Sensitive values are marked as
   # such, the way the compiler does it; returns the whole report
   def apply_catalog(type, title, params, sensitive)
-    Puppet::Type.type(type).rsapi_provider_get_cache.clear
     catalog = Puppet::Resource::Catalog.new
     catalog.host_config = false
     catalog.add_resource(Puppet::Resource.new(type, title, parameters: params, sensitive_parameters: sensitive).to_ral)
@@ -143,11 +142,17 @@ describe 'applying netscaler resources', type: :integration do
       expect(bind).to have_been_requested.once
     end
 
-    it 'reuses the cached state of a changed binding within the same process' do
+    it 'reads the next device of the same `puppet device` run again' do
       stub_lookup('lbvserver_servicegroup_binding', 'vs1').to_return(json({}))
-      stub_request(:put, "#{base}/lbvserver_servicegroup_binding").to_return(json({}, 201))
+      bind = stub_request(:put, "#{base}/lbvserver_servicegroup_binding").to_return(json({}, 201))
       expect(apply(:nitro_lbvserver_servicegroup_binding, 'vs1/sg1', weight: 3)).to be_changed
-      expect(apply(:nitro_lbvserver_servicegroup_binding, 'vs1/sg1', { weight: 3 }, true)).not_to be_changed
+
+      # same process and type classes, new Device: the binding is still absent there
+      other = Puppet::Util::NetworkDevice::Netscaler::Device.new(host: 'ns.example.com', user: 'nsroot', password: 'pw',
+                                                                 save_config: false, prefetch: prefetch)
+      allow(Puppet::Util::NetworkDevice).to receive(:current).and_return(other)
+      expect(apply(:nitro_lbvserver_servicegroup_binding, 'vs1/sg1', weight: 3)).to be_changed
+      expect(bind).to have_been_requested.twice
     end
 
     it 'manages servicegroup members with an integer port in the title' do
@@ -329,7 +334,6 @@ describe 'applying netscaler resources', type: :integration do
       catalog = Puppet::Resource::Catalog.new
       catalog.host_config = false
       resources.each do |type, title, params|
-        Puppet::Type.type(type).rsapi_provider_get_cache.clear
         catalog.add_resource(Puppet::Type.type(type).new(params.merge(title: title)))
       end
       report = Puppet.override(network_device: true) { catalog.apply.report }

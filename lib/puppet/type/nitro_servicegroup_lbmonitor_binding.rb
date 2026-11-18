@@ -91,3 +91,8 @@ The title is split into `servicegroupname`, `monitor_name`.
     },
   },
 )
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:nitro_servicegroup_lbmonitor_binding).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:nitro_servicegroup_lbmonitor_binding).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end

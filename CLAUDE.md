@@ -46,6 +46,7 @@ Requests flow: Resource API type → provider → `PuppetX::Netscaler::NitroReso
   - `settings`: no ensure, PUT only (e.g. `sslvserver`).
 
   Only attributes present in the desired state are managed; nothing is ever unset. Writes invalidate the type's prefetch snapshot.
+- **Resource API get cache:** Resource API >= 2.0 caches `get` results on the type class for the whole process (shared across the devices of one `puppet device` run, never invalidated by our writes). Every generated type opts out (`render_get_cache` in `tools/generate.rb`, also used by `generate_compat.rb`), so the transport snapshot is the only cache, as on Resource API 1.9 (OpenVox 8).
 - **Providers:**
   - `NitroProvider` (`nitro_provider.rb`) is the base of all generated `nitro_*` providers. It maps Puppet attribute names to NITRO names; the namevar of entities is `name` in Puppet.
   - Its `canonicalize` sorts NITRO lists (they are unordered sets) and adds the composite `:title` of bindings, which Resource API strict mode requires.
@@ -73,7 +74,7 @@ Requests flow: Resource API type → provider → `PuppetX::Netscaler::NitroReso
   - `spec/fixtures/generator/oas` and `spec/fixtures/generator/rest` are hand-written imitations used only by the generator spec.
   - Keep `NOTICE` and the README "Credits and provenance" section in sync with where content comes from.
 - **Testing gotchas:**
-  - `spec/integration/apply_spec.rb` applies real catalogs through the Resource API glue with `Puppet[:strict] = :error`. Resource API caches state per type class, so call `rsapi_provider_get_cache.clear` between simulated runs.
+  - `spec/integration/apply_spec.rb` applies real catalogs through the Resource API glue with `Puppet[:strict] = :error`. The types opt out of the Resource API get cache, so nothing needs clearing between simulated runs.
   - Every scenario runs with and without prefetch. Stub GETs with `stub_lookup(resource, parent)`, which picks the URL each mode calls.
   - Those catalogs use `host_config = false`, which makes Puppet ignore noop. To test noop, use a host catalog and pre-create `Puppet[:statedir]`.
   - `spec/unit/examples_spec.rb` compiles every `examples/*.pp`; renaming or removing an attribute means updating the examples too.

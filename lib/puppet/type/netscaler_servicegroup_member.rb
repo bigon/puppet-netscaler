@@ -41,3 +41,8 @@ type.autorequire(:netscaler_servicegroup) { self[:name].to_s[%r{\A(?<servicegrou
 type.autorequire(:nitro_servicegroup) { self[:name].to_s[%r{\A(?<servicegroupname>[^/]+)/(?<servername>.+):(?<port>\d+)\z}, 'servicegroupname'] }
 type.autorequire(:netscaler_server) { self[:name].to_s[%r{\A(?<servicegroupname>[^/]+)/(?<servername>.+):(?<port>\d+)\z}, 'servername'] }
 type.autorequire(:nitro_server) { self[:name].to_s[%r{\A(?<servicegroupname>[^/]+)/(?<servername>.+):(?<port>\d+)\z}, 'servername'] }
+
+# The transport caches the NITRO listings per device; no Resource API get cache
+if Puppet::Type.type(:netscaler_servicegroup_member).respond_to?(:rsapi_provider_get_cache)
+  Puppet::Type.type(:netscaler_servicegroup_member).define_singleton_method(:rsapi_provider_get_cache) { Puppet::ResourceApi::ProviderGetCache.new }
+end
