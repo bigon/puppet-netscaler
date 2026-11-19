@@ -108,7 +108,8 @@ the structured facts in new code, for example
 `$facts['os']['name'] == 'NetScaler'`.
 
 Facts the NITRO user is not allowed to read are left out instead of failing
-the run.
+the run. So are the counters the appliance reports as unavailable
+(`4294967295`), e.g. `cpuusage` on some virtual appliances.
 
 ### Semantics
 

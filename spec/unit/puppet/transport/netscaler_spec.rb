@@ -344,6 +344,14 @@ describe Puppet::Transport::Netscaler do
       )
     end
 
+    it 'leaves out the stat facts NITRO reports as unavailable' do
+      stub_facts
+      stub_request(:get, "#{stat}/ns").to_return(json('ns' => { 'cpuusage' => '4294967295', 'memuseinmb' => 4_294_967_295.0, 'numcpus' => '2' }))
+      facts = transport.facts(nil)
+      expect(facts).not_to include('cpuusage', 'memuseinmb')
+      expect(facts).to include('numcpus' => '2')
+    end
+
     it 'reports no facts beyond upstream puppetlabs-netscaler' do
       stub_facts
       expect(transport.facts(nil).keys).not_to include('osfamily', 'operatingsystemmajrelease', 'operatingsystemrelease', 'role')

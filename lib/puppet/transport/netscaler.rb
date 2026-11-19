@@ -31,6 +31,9 @@ module Puppet::Transport
     # Flat facts reported by puppetlabs-netscaler, by NITRO source
     LEGACY_CONFIG_FACTS = %w[ipaddress netmask systemtype primaryip timezone lastconfigchangedtime lastconfigsavetime systemtime].freeze
     LEGACY_STAT_FACTS = %w[cpuusage memuseinmb numcpus starttime].freeze
+    # Value of a NITRO counter the appliance cannot provide (2**32 - 1), e.g.
+    # cpuusage on some virtual appliances. Such stat facts are left out.
+    STAT_UNAVAILABLE = '4294967295'
 
     attr_reader :host, :port
 
@@ -183,8 +186,13 @@ module Puppet::Transport
 
     def legacy_facts(version, config, stats, mac)
       facts = LEGACY_CONFIG_FACTS.to_h { |f| [f, config[f]] }
-      facts.merge!(LEGACY_STAT_FACTS.to_h { |f| [f, stats[f]] })
+      facts.merge!(LEGACY_STAT_FACTS.to_h { |f| [f, stat_value(stats[f])] })
       facts.merge('version' => version, 'macaddress' => mac, 'operatingsystem' => 'Netscaler').compact
+    end
+
+    # nil when NITRO reports the counter as unavailable (string or float)
+    def stat_value(value)
+      value unless value.to_s.delete_suffix('.0') == STAT_UNAVAILABLE
     end
 
     # MAC address of the first data interface (skips loopback LO/x)
