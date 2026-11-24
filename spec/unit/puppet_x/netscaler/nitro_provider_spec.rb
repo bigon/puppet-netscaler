@@ -67,10 +67,25 @@ describe PuppetX::Netscaler::NitroProvider do
       expect(all).to have_been_requested.once
     end
 
-    it 'raises when NITRO refuses a full listing with prefetch' do
+    it 'raises when NITRO refuses a full listing with prefetch, with one request per listing' do
       allow(context).to receive(:transport).and_return(prefetching)
-      stub_request(:get, "#{base}/server").to_return(nitro_error(1145, 'Not authorized', 403))
+      all = stub_request(:get, "#{base}/server").to_return(nitro_error(1145, 'Not authorized', 403))
       expect { provider.get(context) }.to raise_error(Puppet::Transport::Netscaler::Error, %r{Not authorized})
+      expect(all).to have_been_requested.once
+      expect { provider.get(context) }.to raise_error(Puppet::Transport::Netscaler::Error, %r{Not authorized})
+      expect(all).to have_been_requested.twice
+    end
+
+    it 'lists again after a write with prefetch' do
+      allow(context).to receive(:transport).and_return(prefetching)
+      before = json('server' => [{ 'name' => 'web1' }])
+      after = json('server' => [{ 'name' => 'web1' }, { 'name' => 'web2' }])
+      all = stub_request(:get, "#{base}/server").to_return(before, after)
+      stub_request(:post, "#{base}/server").to_return(json({}, 201))
+      expect(provider.get(context)).to eq([{ ensure: 'present', name: 'web1' }])
+      provider.set(context, 'web2' => { is: { name: 'web2', ensure: 'absent' }, should: { name: 'web2', ensure: 'present', ipaddress: '10.0.0.2' } })
+      expect(provider.get(context)).to eq([{ ensure: 'present', name: 'web1' }, { ensure: 'present', name: 'web2' }])
+      expect(all).to have_been_requested.twice
     end
 
     it 'fetches objects one by one when NITRO refuses the listing' do

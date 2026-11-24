@@ -104,7 +104,7 @@ module PuppetX
       # requested parent.
       def list(client, parents = nil)
         rows = if parents.nil?
-                 prefetched(client) || fetch_all(client)
+                 prefetched(client, raise_refusal: true) || fetch_all(client)
                elsif (all = prefetched(client))
                  wanted = parents.compact.map(&:to_s)
                  all.select { |row| wanted.include?(row[key].to_s) }
@@ -260,16 +260,23 @@ module PuppetX
       end
 
       # The per-run listing of this type, or nil when prefetch is disabled or
-      # the NITRO user may not list the whole type (then: one GET per object)
-      def prefetched(client)
+      # the NITRO user may not list the whole type (then: one GET per object).
+      # With raise_refusal, the call whose listing NITRO refuses raises that
+      # error, so that a full listing does not send the refused GET again.
+      def prefetched(client, raise_refusal: false)
         return nil unless client.respond_to?(:prefetch?) && client.prefetch?
 
-        client.snapshot(resource) do
+        refusal = nil
+        rows = client.snapshot(resource) do
           fetch_all(client)
         rescue Puppet::Transport::Netscaler::Error => e
           Puppet.debug("NetScaler: cannot list #{resource} (#{e.message}), fetching objects one by one")
+          refusal = e
           nil
         end
+        raise refusal if raise_refusal && refusal
+
+        rows
       end
 
       # Puppet changed this type: the listing is stale
