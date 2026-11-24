@@ -166,6 +166,22 @@ the run. So are the counters the appliance reports as unavailable
   NITRO user may not list a whole type, that type falls back to one GET per
   object. Set `prefetch: false` for a device to always use one GET per
   object, for example when it holds many objects of which Puppet manages few.
+* **Attributes that only apply to some objects**: declare them only where
+  they apply. Some lbvserver attributes only apply to some vservers:
+  - `netmask` and `v6netmasklen` (compat: `lb_method_netmask`,
+    `lb_method_ipv6_mask_length`) apply to the DESTINATIONIPHASH and
+    SOURCEIPHASH methods.
+  - `recursionavailable` (compat: `recursion_available`) applies to DNS
+    vservers.
+
+  NITRO's GET of one vserver leaves these attributes out where they don't
+  apply. Its listing, as seen on 14.1, reports them on every vserver that
+  follows the first one they apply to. Declared on a vserver they don't
+  apply to, such an attribute shows a change on every run without prefetch.
+  With prefetch, it depends on where the vserver falls in the listing. The
+  same listing feeds `puppet device --resource nitro_lbvserver` (and
+  `netscaler_lbvserver`), so a manifest built from its output can carry
+  these attributes where they don't apply: remove them there.
 * **Saving**: with `save_config: true` (the default), the configuration is saved
   once, at the end of the run, if anything changed.
 
