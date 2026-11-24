@@ -19,7 +19,8 @@ module Puppet::Provider::NetscalerCsvserver
       resources = super
       return resources if resources.empty?
 
-      parents = names.nil? ? nil : resources.map { |r| r[:name] }
+      # nil or [] means every csvserver: one listing of the bindings
+      parents = (names.nil? || names.empty?) ? nil : resources.map { |r| r[:name] }
       defaults = binding.list(context.transport, parents).to_h { |b| [b['name'], b['lbvserver']] }
       resources.each do |r|
         r[:default_lbvserver] = defaults[r[:name]] if defaults[r[:name]]

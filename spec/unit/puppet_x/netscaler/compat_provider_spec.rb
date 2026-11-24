@@ -200,6 +200,21 @@ describe PuppetX::Netscaler::CompatProvider do
       expect(provider.get(context, ['cs1'])).to eq([{ ensure: 'present', name: 'cs1', service_type: 'HTTP', default_lbvserver: 'lb1' }])
     end
 
+    [nil, []].each do |names|
+      it "reads the default lbvservers of all csvservers from one binding listing when given #{names.inspect}" do
+        allow(client).to receive(:get).with('csvserver', nil, {})
+                                      .and_return('csvserver' => [{ 'name' => 'cs1', 'servicetype' => 'HTTP' }, { 'name' => 'cs2', 'servicetype' => 'HTTP' }])
+        expect(client).to receive(:get).with('csvserver_lbvserver_binding', nil, { 'bulkbindings' => 'yes' }).once
+                                       .and_return('csvserver_lbvserver_binding' => [{ 'name' => 'cs1', 'lbvserver' => 'lb1' }])
+        expect(provider.get(context, names)).to eq(
+          [
+            { ensure: 'present', name: 'cs1', service_type: 'HTTP', default_lbvserver: 'lb1' },
+            { ensure: 'present', name: 'cs2', service_type: 'HTTP' },
+          ],
+        )
+      end
+    end
+
     it 'drops a state update value the type does not accept' do
       allow(client).to receive(:get).with('csvserver', 'cs1')
                                     .and_return('csvserver' => [{ 'name' => 'cs1', 'servicetype' => 'HTTP', 'stateupdate' => 'UPDATEONBACKENDUPDATE' }])
