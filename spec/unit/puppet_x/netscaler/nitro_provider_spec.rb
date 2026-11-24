@@ -59,6 +59,20 @@ describe PuppetX::Netscaler::NitroProvider do
       expect(all).to have_been_requested.once
     end
 
+    it 'answers a lookup after a full listing from that listing with prefetch' do
+      allow(context).to receive(:transport).and_return(prefetching)
+      all = stub_request(:get, "#{base}/server").to_return(json('server' => [{ 'name' => 'web1' }]))
+      expect(provider.get(context)).to eq([{ ensure: 'present', name: 'web1' }])
+      expect(provider.get(context, ['missing'])).to eq([])
+      expect(all).to have_been_requested.once
+    end
+
+    it 'raises when NITRO refuses a full listing with prefetch' do
+      allow(context).to receive(:transport).and_return(prefetching)
+      stub_request(:get, "#{base}/server").to_return(nitro_error(1145, 'Not authorized', 403))
+      expect { provider.get(context) }.to raise_error(Puppet::Transport::Netscaler::Error, %r{Not authorized})
+    end
+
     it 'fetches objects one by one when NITRO refuses the listing' do
       allow(context).to receive(:transport).and_return(prefetching)
       stub_request(:get, "#{base}/server").to_return(nitro_error(1145, 'Not authorized', 403))

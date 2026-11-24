@@ -99,11 +99,12 @@ module PuppetX
       # URL key (entity names, or bound-to entity for bindings).
       #
       # With prefetch (the default), the whole type is fetched once per run
-      # and every later lookup, including "does not exist", is answered from
-      # that listing. Without it, one GET per requested parent.
+      # and every later lookup, including "does not exist" and a full
+      # listing, is answered from that listing. Without it, one GET per
+      # requested parent.
       def list(client, parents = nil)
         rows = if parents.nil?
-                 fetch_all(client)
+                 prefetched(client) || fetch_all(client)
                elsif (all = prefetched(client))
                  wanted = parents.compact.map(&:to_s)
                  all.select { |row| wanted.include?(row[key].to_s) }
