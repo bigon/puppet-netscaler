@@ -124,6 +124,13 @@ the run. So are the counters the appliance reports as unavailable
 * **Bindings** take composite titles (`<bound-to>/<bound>`). NITRO cannot
   modify a binding in place, so a changed binding attribute (for example
   `weight`) is unbound and bound again.
+* **Servicegroup members by IP address**: members are bound by server name.
+  For a member known only by its address, declare a server named after it
+  and bind that name:
+  `nitro_server { '10.0.0.5': ipaddress => '10.0.0.5' }` and
+  `nitro_servicegroup_servicegroupmember_binding { 'sg_web/10.0.0.5:80': }`.
+  This is the server NITRO creates itself when a member is added by IP; write
+  an IPv6 address in the compressed lower-case form NITRO returns.
 * **Lists** (for example `nitro_lbmonitor` `respcode`) are unordered sets in
   NITRO: they are compared sorted, so a different order is not a change.
   The exception is `nitro_lbvserver` `persistavpno` (`netscaler_lbvserver`
