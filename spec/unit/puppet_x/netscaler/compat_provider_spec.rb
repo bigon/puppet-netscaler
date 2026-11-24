@@ -276,9 +276,24 @@ describe PuppetX::Netscaler::CompatProvider do
       expect(provider.canonicalize(context, found.map(&:dup))).to eq(found)
     end
 
+    it 'sends a real cache type' do
+      expect(client).to receive(:post).with('service', { 'name' => 's1', 'servername' => 'c1', 'servicetype' => 'HTTP', 'port' => 80, 'cachetype' => 'REVERSE' })
+      provider.set(context, change(nil, ensure: 'present', name: 's1', server_name: 'c1', protocol: 'HTTP', port: 80, cache_type: 'REVERSE'))
+    end
+
     it 'sends any case of an enum value in the NITRO spelling' do
       expect(client).to receive(:post).with('service', { 'name' => 's1', 'servicetype' => 'RADIUSListener', 'port' => 1812 })
       provider.set(context, change(nil, provider.canonicalize(context, [{ ensure: 'present', name: 's1', protocol: 'radiuslistener', port: 1812 }]).first))
+    end
+  end
+
+  describe 'netscaler_servicegroup' do
+    let(:type_name) { :netscaler_servicegroup }
+    let(:provider_class) { Puppet::Provider::NetscalerServicegroup::NetscalerServicegroup }
+
+    it 'leaves the cache type SERVER out of a create, as puppetlabs-netscaler did' do
+      expect(client).to receive(:post).with('servicegroup', { 'servicegroupname' => 'sg1', 'servicetype' => 'HTTP' })
+      provider.set(context, change(nil, ensure: 'present', name: 'sg1', protocol: 'HTTP', cache_type: 'SERVER'))
     end
   end
 end

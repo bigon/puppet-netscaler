@@ -5,8 +5,10 @@
 # hand; run `rake generate:compat` after a change to refresh the
 # lib/puppet/type/netscaler_*.rb files. `autorequire` maps a NITRO resource
 # to the compat attribute (Symbol) or title part (String) naming it; both its
-# netscaler_* and nitro_* types are autorequired. Special cases live in the
-# lib/puppet/provider/netscaler_* providers.
+# netscaler_* and nitro_* types are autorequired. An attribute's `not_sent`
+# lists values NITRO reports but refuses on a write: as puppetlabs-netscaler
+# did, they are accepted and compared, but left out of requests. Special
+# cases live in the lib/puppet/provider/netscaler_* providers.
 module PuppetX
   module Netscaler
     COMPAT = {
@@ -41,7 +43,7 @@ module PuppetX
           hash_id: { api: 'hashid', kind: :integer, desc: "A numerical identifier that can be used by hash based load balancing methods. Must be unique for each service.\nMinimum value: 1" },
           server_id: { api: 'customserverid', kind: :string, desc: "Unique identifier for the service. Used when the persistency type for the virtual server is set to Custom Server ID." },
           clear_text_port: { api: 'cleartextport', kind: :integer, init_only: true, desc: "Port to which clear text data must be sent after the appliance decrypts incoming SSL traffic. Applicable to transparent SSL services." },
-          cache_type: { api: 'cachetype', kind: :upcase, init_only: true, desc: "Cache type supported by the cache server." },
+          cache_type: { api: 'cachetype', kind: :upcase, init_only: true, not_sent: ['SERVER'], desc: "Cache type supported by the cache server." },
           cacheable: { api: 'cacheable', kind: :truthy, values: ["YES", "NO"], desc: "Use the transparent cache redirection virtual server to forward requests to the cache server. May not be specified if cache_type is 'TRANSPARENT', 'REVERSE', or 'FORWARD'" },
           health_monitoring: { api: 'healthmonitor', kind: :truthy, values: ["YES", "NO"], desc: "Monitor the health of this service. Available settings function as follows:\nYES - Send probes to check the health of the service.\nNO - Do not send probes to check the health of the service. With the NO option, the appliance shows the service as UP at all times." },
           appflow_logging: { api: 'appflowlog', kind: :truthy, values: ["ENABLED", "DISABLED"], desc: "Enable logging of AppFlow information." },
@@ -72,7 +74,7 @@ module PuppetX
         attributes: {
           protocol: { api: 'servicetype', kind: :upcase, init_only: true, desc: "Protocol in which data is exchanged with the service group. Required." },
           traffic_domain_id: { api: 'td', kind: :integer, init_only: true, desc: "Integer value that uniquely identifies the traffic domain in which you want to configure the entity." },
-          cache_type: { api: 'cachetype', kind: :upcase, init_only: true, desc: "Cache type supported by the cache server." },
+          cache_type: { api: 'cachetype', kind: :upcase, init_only: true, not_sent: ['SERVER'], desc: "Cache type supported by the cache server." },
           autoscale_mode: { api: 'autoscale', kind: :upcase, init_only: true, desc: "Auto scale option for a servicegroup." },
           member_port: { api: 'memberport', kind: :integer, init_only: true, desc: "The port for the service group members. Only valid when autoscale_mode is POLICY." },
           cacheable: { api: 'cacheable', kind: :truthy, values: ["YES", "NO"], desc: "Use the transparent cache redirection virtual server to forward requests to the cache server. May not be specified if cache_type is 'TRANSPARENT', 'REVERSE', or 'FORWARD'" },

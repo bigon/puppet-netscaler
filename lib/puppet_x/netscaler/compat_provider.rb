@@ -245,7 +245,7 @@ module PuppetX
       def to_nitro(hash)
         keys = title_keys(hash[:name]) or raise ArgumentError, "#{hash[:name]} does not match #{compat[:title_format]}"
         compat[:attributes].each_with_object(keys) do |(name, a), rec|
-          next if a[:ignored] || hash[name].nil?
+          next if a[:ignored] || hash[name].nil? || a[:not_sent]&.include?(hash[name])
 
           rec[a[:api]] = hash[name].respond_to?(:unwrap) ? hash[name].unwrap : hash[name]
         end

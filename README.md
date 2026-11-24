@@ -189,6 +189,13 @@ the run. So are the counters the appliance reports as unavailable
   same listing feeds `puppet device --resource nitro_lbvserver` (and
   `netscaler_lbvserver`), so a manifest built from its output can carry
   these attributes where they don't apply: remove them there.
+* **`cache_type => 'SERVER'`**: NITRO reports this cache type for ordinary
+  services and servicegroups but refuses it on a create. As
+  puppetlabs-netscaler did, `netscaler_service` and `netscaler_servicegroup`
+  accept it and leave it out of the request, so their `puppet device
+  --resource` output can be applied as is. `nitro_service` and
+  `nitro_servicegroup` only know the documented cache types and leave
+  `SERVER` out of what they read.
 * **Saving**: with `save_config: true` (the default), the configuration is saved
   once, at the end of the run, if anything changed.
 

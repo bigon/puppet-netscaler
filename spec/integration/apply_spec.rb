@@ -286,6 +286,22 @@ describe 'applying netscaler resources', type: :integration do
       no_writes
     end
 
+    it 'creates a service with the cache type NITRO reports but refuses, as puppetlabs-netscaler did, and is idempotent' do
+      params = { server_name: 'web1', protocol: 'HTTP', port: '80', cache_type: 'server' }
+      stub_lookup('service', 'svc1').to_return(not_found)
+      create = stub_request(:post, "#{base}/service")
+               .with(body: { 'service' => { 'name' => 'svc1', 'servername' => 'web1', 'servicetype' => 'HTTP', 'port' => 80 } })
+               .to_return(json({}, 201))
+      expect(apply(:netscaler_service, 'svc1', params)).to be_changed
+      expect(create).to have_been_requested.once
+
+      WebMock.reset!
+      stub_lookup('service', 'svc1')
+        .to_return(json('service' => [{ 'name' => 'svc1', 'servername' => 'web1', 'servicetype' => 'HTTP', 'port' => 80, 'cachetype' => 'SERVER' }]))
+      expect(apply(:netscaler_service, 'svc1', params)).not_to be_changed
+      no_writes
+    end
+
     it 'runs a puppetlabs-netscaler manifest and is idempotent' do
       params = { service_type: 'http', ip_address: '10.0.0.10', port: '8080', state: true, lb_method: 'roundrobin' }
       stub_lookup('lbvserver', 'lb1').to_return(not_found)
