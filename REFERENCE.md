@@ -6593,9 +6593,13 @@ configuration stays the last one applied without errors. In noop mode
 nothing is saved. A failed save fails this resource. Without it, the
 configuration is never saved.
 
-Don't order it against those resources with `->`, `require` or
-`before`: that would replace the subscription, and the run refuses it.
-`~>` is fine, and unneeded.
+Changes that were not saved (a failed save, or a failed resource in the
+same run) are saved only by the next run that changes something.
+
+Don't order it against those resources with `->`, `require`, `before`,
+or a `notify`/`subscribe` going from it to them: that would replace the
+subscription, and the run refuses it. `~>` towards it is fine, and
+unneeded. The run also refuses a second `nsconfig_save`.
 
 #### Parameters
 
