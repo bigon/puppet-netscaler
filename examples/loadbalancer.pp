@@ -48,3 +48,6 @@ nitro_lbvserver_servicegroup_binding { 'vs_web/sg_web':
   ensure  => present,
   require => [Nitro_lbvserver['vs_web'], Nitro_servicegroup['sg_web']],
 }
+
+# Save the running configuration when this run changed something and nothing failed
+nsconfig_save { 'running': }

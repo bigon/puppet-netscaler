@@ -50,10 +50,5 @@ Puppet::ResourceApi.register_transport(
       desc: 'Fetch each NITRO resource type once per run (one bulk GET) instead of one GET per managed object.',
       default: true,
     },
-    save_config: {
-      type: 'Boolean',
-      desc: 'Save the running configuration (`save ns config`) after Puppet changed something.',
-      default: true,
-    },
   },
 )

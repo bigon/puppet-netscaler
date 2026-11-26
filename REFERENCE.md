@@ -50,6 +50,7 @@ nothing. It exists so existing manifests that include it keep compiling.
 * [`nitro_sslvserver`](#nitro_sslvserver): Manages NITRO `sslvserver` resources (settings).
 * [`nitro_sslvserver_sslcertkey_binding`](#nitro_sslvserver_sslcertkey_binding): Manages NITRO `sslvserver_sslcertkey_binding` resources (binding).
 * [`nitro_sslvserver_sslciphersuite_binding`](#nitro_sslvserver_sslciphersuite_binding): Manages NITRO `sslvserver_sslciphersuite_binding` resources (binding).
+* [`nsconfig_save`](#nsconfig_save): Saves the running configuration of the NetScaler (NITRO `nsconfig` `save`) at the end of the device's run, when the run changed something and
 
 ## Classes
 
@@ -6576,3 +6577,34 @@ namevar
 Data type: `String`
 
 Name of the SSL virtual server.
+
+### <a name="nsconfig_save"></a>`nsconfig_save`
+
+Saves the running configuration of the NetScaler (NITRO `nsconfig`
+`save`) at the end of the device's run, when the run changed something
+and nothing failed. Declare it once in the device's catalog:
+
+    nsconfig_save { 'running': }
+
+It subscribes to every `nitro_*` and `netscaler_*` resource of the
+catalog: Puppet refreshes it, and so saves, only when one of them
+changed, and skips it when one of them failed, so the saved
+configuration stays the last one applied without errors. In noop mode
+nothing is saved. A failed save fails this resource. Without it, the
+configuration is never saved.
+
+Don't order it against those resources with `->`, `require` or
+`before`: that would replace the subscription, and the run refuses it.
+`~>` is fine, and unneeded.
+
+#### Parameters
+
+The following parameters are available in the `nsconfig_save` type.
+
+* [`name`](#-nsconfig_save--name)
+
+##### <a name="-nsconfig_save--name"></a>`name`
+
+namevar
+
+Any name: one resource per device is enough.

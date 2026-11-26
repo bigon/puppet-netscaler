@@ -46,7 +46,6 @@ module Puppet::Transport
       @user = connection_info[:user]
       @password = unwrap(connection_info[:password])
       @timeout = connection_info.fetch(:timeout, 60)
-      @save_config = connection_info.fetch(:save_config, true)
       @prefetch = connection_info.fetch(:prefetch, true)
       @http = nil
       @snapshots = {}
@@ -67,10 +66,6 @@ module Puppet::Transport
     # Forget a listing after Puppet changed that resource type
     def invalidate(resource)
       @snapshots.delete(resource)
-    end
-
-    def save_config?
-      @save_config
     end
 
     def verify(_context)

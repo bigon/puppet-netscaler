@@ -5,36 +5,6 @@ require_relative 'nitro_resource'
 
 module PuppetX
   module Netscaler
-    # Behaviour shared by all providers: save the configuration once the run
-    # is over, rather than after each change.
-    module ConfigSaver
-      module_function
-
-      def changed(transport)
-        return unless transport.respond_to?(:save_config?) && transport.save_config?
-
-        @pending ||= {}.compare_by_identity
-        first = @pending.empty?
-        @pending[transport] = true
-        at_exit { flush } if first && !@at_exit_registered
-        @at_exit_registered = true
-      end
-
-      def pending?(transport)
-        (@pending || {}).key?(transport)
-      end
-
-      def flush
-        (@pending || {}).each_key do |transport|
-          transport.save
-          Puppet.notice('NetScaler: running configuration saved')
-        rescue StandardError => e
-          Puppet.err("NetScaler: saving the running configuration failed: #{e.message}")
-        end
-        @pending = {}.compare_by_identity
-      end
-    end
-
     # Drop values the appliance returns that do not fit the declared data
     # type (e.g. enum values added in a newer firmware), instead of failing
     # the whole type in strict mode. Shared by the nitro_* and the
@@ -102,10 +72,7 @@ module PuppetX
             context.updating(label) { nitro.update(client, to_nitro(is), to_nitro(should)) }
           elsif is_present
             context.deleting(label) { nitro.delete(client, to_nitro(is)) }
-          else
-            next
           end
-          ConfigSaver.changed(client)
         end
       end
 

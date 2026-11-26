@@ -43,13 +43,12 @@ password: secret
 # ssl_verify: true
 # ca_file: /etc/pki/tls/certs/netscaler-ca.pem
 # timeout: 60
-# save_config: true    # run "save ns config" after a run that changed something
 # prefetch: true       # list each NITRO type once per run instead of one GET per object
 ```
 
 For migrations, the legacy puppetlabs-netscaler URL form is still accepted:
 `url https://nsroot:secret@ns01.example.com/nitro/v1/`. Options can be passed as
-query parameters (`?ssl_verify=false&save_config=false&prefetch=false`).
+query parameters (`?ssl_verify=false&prefetch=false`).
 
 Run `puppet device -v --target ns01.example.com`, sign the certificate, and
 classify the node `ns01.example.com` like any other node.
@@ -80,6 +79,9 @@ nitro_lbvserver { 'vs_web':
 
 # Title: <name>/<servicegroupname>
 nitro_lbvserver_servicegroup_binding { 'vs_web/sg_web': }
+
+# Save the running configuration when this run changed something
+nsconfig_save { 'running': }
 ```
 
 See [examples/](examples/) for complete manifests, including a legacy one.
@@ -196,8 +198,20 @@ the run. So are the counters the appliance reports as unavailable
   --resource` output can be applied as is. `nitro_service` and
   `nitro_servicegroup` only know the documented cache types and leave
   `SERVER` out of what they read.
-* **Saving**: with `save_config: true` (the default), the configuration is saved
-  once, at the end of the run, if anything changed.
+* **Saving**: the running configuration is saved only by an `nsconfig_save`
+  resource, declared once in the device's catalog
+  (`nsconfig_save { 'running': }`). It subscribes to every `nitro_*` and
+  `netscaler_*` resource: Puppet saves at the end of the device's run when
+  one of them changed, and skips the save when one of them failed, so the
+  saved configuration stays the last one applied without errors. The changes
+  that did go through stay in the running configuration only, until a later
+  run changes something and saves (a run without changes does not save).
+  Nothing is saved in noop mode, or when `--tags` leave the resource out. A
+  failed save fails the resource, in the report and the exit code. Don't
+  order it against those resources with `->`, `require`, `before`, or a
+  `notify`/`subscribe` going from it to them: it would replace the
+  subscription, so the run refuses it (`~>` towards it is fine). The run
+  also refuses a second `nsconfig_save`.
 
 ### Available types
 
@@ -249,7 +263,8 @@ Known differences:
   `netscaler_rewritepolicy`, `netscaler_responderpolicy`, `netscaler_vlan`,
   `netscaler_route`, `netscaler_user`, `netscaler_file`, ...) have no
   compatibility type yet.
-* Changes are saved by default (`save_config`). The old module never saved.
+* The configuration can be saved, with an `nsconfig_save` resource. Without
+  it, nothing is saved, as with the old module.
 * The TLS certificate of the appliance is verified by default (`ssl_verify`),
   for the legacy URL form too. This is a deliberate change: puppetlabs-netscaler
   never verified it, so anyone able to intercept the connection could read the

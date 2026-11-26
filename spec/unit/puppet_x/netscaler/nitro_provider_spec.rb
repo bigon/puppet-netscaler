@@ -12,8 +12,8 @@ require 'puppet/provider/nitro_sslvserver/nitro_sslvserver'
 # End-to-end: provider -> NitroResource -> transport -> HTTP (webmock)
 describe PuppetX::Netscaler::NitroProvider do
   let(:base) { 'https://ns/nitro/v1/config' }
-  let(:transport) { Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p', save_config: false, prefetch: false) }
-  let(:prefetching) { Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p', save_config: false) }
+  let(:transport) { Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p', prefetch: false) }
+  let(:prefetching) { Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p') }
   let(:type) { Puppet::Type.type(type_name) }
   let(:context) { Puppet::ResourceApi::PuppetContext.new(type.type_definition.definition) }
   let(:provider) { provider_class.new }
@@ -144,24 +144,10 @@ describe PuppetX::Netscaler::NitroProvider do
       expect(context).to be_failed
     end
 
-    it 'saves the configuration once at the end when enabled' do
-      t = Puppet::Transport::Netscaler.new(nil, host: 'ns', user: 'u', password: 'p')
-      allow(context).to receive(:transport).and_return(t)
+    it 'never saves the configuration itself (that is nsconfig_save)' do
       stub_request(:post, "#{base}/server").to_return(json({}, 201))
-      save = stub_request(:post, "#{base}/nsconfig?action=save").to_return(json({}))
-      allow(PuppetX::Netscaler::ConfigSaver).to receive(:at_exit)
-      provider.set(context, 'a' => { is: nil, should: { name: 'a', ensure: 'present', ipaddress: '10.0.0.1' } },
-                            'b' => { is: nil, should: { name: 'b', ensure: 'present', ipaddress: '10.0.0.2' } })
-      expect(PuppetX::Netscaler::ConfigSaver).to be_pending(t)
-      PuppetX::Netscaler::ConfigSaver.flush
-      expect(save).to have_been_requested.once
-      expect(PuppetX::Netscaler::ConfigSaver).not_to be_pending(t)
-    end
-
-    it 'does not save when disabled' do
-      stub_request(:delete, "#{base}/server/a").to_return(json({}))
-      provider.set(context, 'a' => { is: { name: 'a', ensure: 'present' }, should: { name: 'a', ensure: 'absent' } })
-      expect(PuppetX::Netscaler::ConfigSaver).not_to be_pending(transport)
+      provider.set(context, 'a' => { is: nil, should: { name: 'a', ensure: 'present', ipaddress: '10.0.0.1' } })
+      expect(a_request(:post, %r{nsconfig})).not_to have_been_made
     end
   end
 

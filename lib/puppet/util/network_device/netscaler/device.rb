@@ -29,7 +29,7 @@ module Puppet::Util::NetworkDevice::Netscaler
         user: decode_userinfo(uri.user),
         password: decode_userinfo(uri.password),
       }
-      %w[ssl_verify save_config prefetch].each do |option|
+      %w[ssl_verify prefetch].each do |option|
         config[option.to_sym] = !%w[false no 0].include?(query[option].to_s.downcase) if query.key?(option)
       end
       config

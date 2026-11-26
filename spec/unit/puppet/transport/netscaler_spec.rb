@@ -20,10 +20,6 @@ describe Puppet::Transport::Netscaler do
       expect(described_class.new(nil, connection_info.merge(ssl: false)).port).to eq(80)
     end
 
-    it 'saves the configuration by default' do
-      expect(transport.save_config?).to be(true)
-    end
-
     it 'prefetches by default' do
       expect(transport.prefetch?).to be(true)
       expect(described_class.new(nil, connection_info.merge(prefetch: false)).prefetch?).to be(false)

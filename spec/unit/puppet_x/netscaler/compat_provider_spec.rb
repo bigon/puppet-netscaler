@@ -9,7 +9,7 @@ require 'puppet/transport/netscaler'
 end
 
 describe PuppetX::Netscaler::CompatProvider do
-  let(:client) { instance_double(Puppet::Transport::Netscaler, save_config?: false) }
+  let(:client) { instance_double(Puppet::Transport::Netscaler) }
   let(:context) { Puppet::ResourceApi::PuppetContext.new(Puppet::Type.type(type_name).type_definition.definition) }
   let(:provider) { provider_class.new }
 

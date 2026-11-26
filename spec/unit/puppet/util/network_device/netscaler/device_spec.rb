@@ -21,8 +21,8 @@ describe Puppet::Util::NetworkDevice::Netscaler::Device do
     end
 
     it 'handles http, custom ports and options' do
-      expect(described_class.legacy_url_to_config('http://admin:pw@ns:8080/nitro/v1?ssl_verify=false&save_config=no')).to eq(
-        host: 'ns', port: 8080, ssl: false, user: 'admin', password: 'pw', ssl_verify: false, save_config: false,
+      expect(described_class.legacy_url_to_config('http://admin:pw@ns:8080/nitro/v1?ssl_verify=false&prefetch=no')).to eq(
+        host: 'ns', port: 8080, ssl: false, user: 'admin', password: 'pw', ssl_verify: false, prefetch: false,
       )
     end
 

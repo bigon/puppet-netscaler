@@ -11,7 +11,7 @@ describe 'applying netscaler resources', type: :integration do
   let(:base) { 'https://ns.example.com/nitro/v1/config' }
   let(:prefetch) { true }
   let(:device) do
-    Puppet::Util::NetworkDevice::Netscaler::Device.new(host: 'ns.example.com', user: 'nsroot', password: 'pw', save_config: false, prefetch: prefetch)
+    Puppet::Util::NetworkDevice::Netscaler::Device.new(host: 'ns.example.com', user: 'nsroot', password: 'pw', prefetch: prefetch)
   end
 
   let(:vardir) { Dir.mktmpdir }
@@ -166,7 +166,7 @@ describe 'applying netscaler resources', type: :integration do
 
       # same process and type classes, new Device: the binding is still absent there
       other = Puppet::Util::NetworkDevice::Netscaler::Device.new(host: 'ns.example.com', user: 'nsroot', password: 'pw',
-                                                                 save_config: false, prefetch: prefetch)
+                                                                 prefetch: prefetch)
       allow(Puppet::Util::NetworkDevice).to receive(:current).and_return(other)
       expect(apply(:nitro_lbvserver_servicegroup_binding, 'vs1/sg1', weight: 3)).to be_changed
       expect(bind).to have_been_requested.twice

@@ -207,10 +207,7 @@ module PuppetX
             context.updating(title) { update(client, is, should) }
           elsif is[:ensure].to_s == 'present'
             context.deleting(title) { nitro.delete(client, to_nitro(is)) }
-          else
-            next
           end
-          ConfigSaver.changed(client)
         end
       end
 
